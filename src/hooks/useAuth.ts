@@ -82,6 +82,38 @@ export const useAuth = (): AuthContextType => {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const ensureBackendProfile = async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      try {
+        const token = await currentUser.getIdToken();
+        localStorage.setItem('token', token);
+
+        const profileEmail =
+          currentUser.email ||
+          currentUser.providerData.find((provider) => provider.email)?.email;
+
+        if (!profileEmail) {
+          console.warn('Unable to sync profile: no email found for the current user.');
+          return;
+        }
+
+        await backendApi.createUserProfile({
+          email: profileEmail,
+          displayName: profileEmail.split('@')[0] || 'Creator',
+          authUserId: currentUser.uid,
+        });
+      } catch (error) {
+        console.error('Error ensuring backend profile:', error);
+      }
+    };
+
+    ensureBackendProfile();
+  }, [currentUser]);
+
   const register = async (email: string, password: string) => {
     try {
       const sanitizedEmail = sanitizeEmail(email);
@@ -115,8 +147,17 @@ export const useAuth = (): AuthContextType => {
       const userCredential = await signInWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
       const token = await userCredential.user.getIdToken();
       localStorage.setItem('token', token);
+      const profileEmail = userCredential.user.email || sanitizedEmail;
+      await backendApi.createUserProfile({
+        email: profileEmail,
+        displayName: profileEmail.split('@')[0] || 'Creator',
+        authUserId: userCredential.user.uid,
+      });
     } catch (error) {
       console.error('Error logging in:', error);
+      if (isAxiosError(error)) {
+        throw new Error(getBackendErrorMessage(error));
+      }
       throw new Error(getAuthErrorMessage(error));
     }
   };
