@@ -5,20 +5,19 @@ import Button from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
 import Loader from '../components/ui/Loader';
 import { backendApi } from '../services/backend';
-import { UserProfileResponse } from '../types/backend';
+import { UserPost } from '../types/backend';
 
 type Banner = { type: 'success' | 'error'; text: string } | null;
 
-const Profile: React.FC = () => {
+const PostHistory: React.FC = () => {
   const { currentUser, loading } = useAuth();
-  const email = currentUser?.email ?? '';
-  const [profiles, setProfiles] = useState<UserProfileResponse[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfileResponse | null>(null);
-  const [displayName, setDisplayName] = useState('');
+  const [posts, setPosts] = useState<UserPost[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<UserPost[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [feedback, setFeedback] = useState<Banner>(null);
   const [isFetching, setIsFetching] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
 
   const handleError = (error: unknown, fallback: string) => {
     console.error(fallback, error);
@@ -34,75 +33,92 @@ const Profile: React.FC = () => {
     return () => clearTimeout(timer);
   }, [feedback]);
 
-  const fetchProfiles = useCallback(async () => {
-    if (!email) {
+  // Filtrar publicaciones
+  useEffect(() => {
+    let filtered = posts;
+
+    // Filtrar por término de búsqueda
+    if (searchTerm) {
+      filtered = filtered.filter(post =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Filtrar por estado
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(post => post.status === statusFilter);
+    }
+
+    setFilteredPosts(filtered);
+  }, [posts, searchTerm, statusFilter]);
+
+  const fetchUserPosts = useCallback(async () => {
+    if (!currentUser) {
       setIsFetching(false);
       return;
     }
+    
     setIsFetching(true);
     try {
-      const data = await backendApi.getUserProfiles();
-      setProfiles(data);
-      const match = data.find((profile) => profile.email.toLowerCase() === email.toLowerCase()) || null;
-      setUserProfile(match);
-      if (match) {
-        setDisplayName(match.displayName);
-      } else if (email) {
-        setDisplayName(email.split('@')[0] ?? '');
-      }
+      const userPosts = await backendApi.getUserPosts(currentUser.uid);
+      setPosts(userPosts);
     } catch (error) {
-      handleError(error, 'No se pudieron cargar los perfiles desde el backend.');
+      handleError(error, 'No se pudieron cargar las publicaciones.');
     } finally {
       setIsFetching(false);
     }
-  }, [email]);
+  }, [currentUser]);
 
   useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
+    fetchUserPosts();
+  }, [fetchUserPosts]);
 
-  const handleSaveProfile = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!email) {
-      return;
-    }
-    setIsSaving(true);
+  const handleViewDetails = (post: UserPost) => {
+    setSelectedPost(post);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedPost(null);
+  };
+
+  const handleDeletePost = async (postId: string) => {
     try {
-      if (userProfile) {
-        await backendApi.deleteUserProfile(userProfile.id);
-      }
-      const created = await backendApi.createUserProfile({
-        email,
-        displayName: displayName.trim() || email,
-      });
-      setUserProfile(created);
-      setProfiles((prev) => {
-        const remaining = prev.filter((profile) => profile.id !== userProfile?.id);
-        return [created, ...remaining];
-      });
-      setFeedback({ type: 'success', text: 'Perfil guardado en el servicio backend.' });
+      await backendApi.deletePost(postId);
+      setPosts(prev => prev.filter(post => post.id !== postId));
+      setFeedback({ type: 'success', text: 'Publicación eliminada correctamente.' });
     } catch (error) {
-      handleError(error, 'Error al guardar tu perfil.');
-    } finally {
-      setIsSaving(false);
+      handleError(error, 'No se pudo eliminar la publicación.');
     }
   };
 
-  const handleDeleteProfile = async (id: number) => {
-    setIsDeleting(id);
-    try {
-      await backendApi.deleteUserProfile(id);
-      setProfiles((prev) => prev.filter((profile) => profile.id !== id));
-      if (userProfile?.id === id) {
-        setUserProfile(null);
-        setDisplayName(email ? email.split('@')[0] ?? '' : '');
-      }
-      setFeedback({ type: 'success', text: 'Perfil eliminado correctamente.' });
-    } catch (error) {
-      handleError(error, 'No se pudo eliminar ese perfil.');
-    } finally {
-      setIsDeleting(null);
-    }
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      draft: { color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', label: 'Borrador' },
+      published: { color: 'bg-green-500/20 text-green-300 border-green-500/30', label: 'Publicado' },
+      scheduled: { color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', label: 'Programado' },
+      archived: { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: 'Archivado' }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || 
+                  { color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: status };
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (loading) {
@@ -123,7 +139,7 @@ const Profile: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="relative z-10 max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <header className="mb-12">
             <div className="flex items-center gap-3 mb-4">
@@ -131,17 +147,17 @@ const Profile: React.FC = () => {
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 blur-md opacity-75"></div>
                 <div className="relative h-3 w-3 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500"></div>
               </div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-gray-500">Perfil e Identidad</p>
+              <p className="text-sm font-bold uppercase tracking-[0.3em] text-gray-500">Historial de Publicaciones</p>
             </div>
             
             <h1 className="text-5xl font-bold mb-4">
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-                Tu identidad en AnyPost
+                Tus Publicaciones
               </span>
             </h1>
             
             <p className="text-gray-400 text-lg max-w-3xl">
-              Sincroniza tu cuenta de Firebase con el backend de Spring para que los assets, borradores y trabajos puedan referenciar un ID de perfil.
+              Revisa y gestiona todo tu historial de publicaciones en una sola vista.
             </p>
           </header>
 
@@ -167,186 +183,300 @@ const Profile: React.FC = () => {
             </div>
           )}
 
-          {/* Main Grid */}
+          {/* Filters and Search */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            {/* Account Info Card */}
+            {/* Search Card */}
+            <div className="group relative lg:col-span-2">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
+              
+              <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Buscar Publicaciones</h2>
+                  <div className="h-1 w-12 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 rounded-full"></div>
+                </div>
+                
+                <div className="space-y-4">
+                  <Input
+                    label="Buscar en publicaciones"
+                    placeholder="Título, contenido o etiquetas..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Filtrar por estado
+                    </label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-xl"
+                    >
+                      <option value="all">Todos los estados</option>
+                      <option value="draft">Borrador</option>
+                      <option value="published">Publicado</option>
+                      <option value="scheduled">Programado</option>
+                      <option value="archived">Archivado</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Card */}
             <div className="group relative">
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
               
               <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">Cuenta</h2>
+                  <h2 className="text-2xl font-bold text-white mb-2">Resumen</h2>
                   <div className="h-1 w-12 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 rounded-full"></div>
                 </div>
                 
-                <div className="space-y-4 mb-6">
-                  <div className="rounded-xl bg-black/40 border border-white/10 p-4 backdrop-blur-xl">
-                    <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Email</p>
-                    <p className="text-sm text-white font-medium break-all">{currentUser?.email}</p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Total</span>
+                    <span className="text-white font-bold text-xl">{posts.length}</span>
                   </div>
-                  
-                  <div className="rounded-xl bg-black/40 border border-white/10 p-4 backdrop-blur-xl">
-                    <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Firebase UID</p>
-                    <p className="text-xs text-gray-300 font-mono break-all">{currentUser?.uid}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Publicados</span>
+                    <span className="text-green-400 font-bold">
+                      {posts.filter(p => p.status === 'published').length}
+                    </span>
                   </div>
-                  
-                  <div className="rounded-xl bg-black/40 border border-white/10 p-4 backdrop-blur-xl">
-                    <p className="text-xs uppercase tracking-[0.2em] text-gray-500 mb-2">Perfil Backend</p>
-                    {userProfile ? (
-                      <div className="space-y-2">
-                        <p className="text-sm font-bold text-green-400">#{userProfile.id}</p>
-                        {userProfile?.createdAt && (
-                          <p className="text-xs text-gray-500">
-                            Creado {new Date(userProfile.createdAt).toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm font-bold text-red-400">No creado</p>
-                    )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Borradores</span>
+                    <span className="text-yellow-400 font-bold">
+                      {posts.filter(p => p.status === 'draft').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Mostrando</span>
+                    <span className="text-purple-400 font-bold">{filteredPosts.length}</span>
                   </div>
                 </div>
-                
-                <Button variant="outline" onClick={fetchProfiles} isLoading={isFetching} className="w-full">
-                  Recargar perfiles
-                </Button>
-              </div>
-            </div>
-
-            {/* Profile Editor Card */}
-            <div className="lg:col-span-2 group relative">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
-              
-              <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">Perfil Backend</h2>
-                  <div className="h-1 w-12 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 rounded-full mb-3"></div>
-                  <p className="text-sm text-gray-400">
-                    El API de Spring almacena este registro y lo conecta a assets, borradores y trabajos.
-                  </p>
-                </div>
-                
-                <form className="space-y-6" onSubmit={handleSaveProfile}>
-                  <Input
-                    label="Nombre para mostrar"
-                    placeholder="Marketing de Producto"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required
-                  />
-                  
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <Button type="submit" variant="primary" isLoading={isSaving} className="flex-1 sm:flex-none">
-                      {userProfile ? 'Actualizar perfil' : 'Crear perfil'}
-                    </Button>
-                    {userProfile && (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => handleDeleteProfile(userProfile.id)}
-                        isLoading={isDeleting === userProfile.id}
-                        className="flex-1 sm:flex-none"
-                      >
-                        Eliminar mi perfil
-                      </Button>
-                    )}
-                  </div>
-                  
-                  <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-4 backdrop-blur-xl">
-                    <div className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-xs text-blue-300 leading-relaxed">
-                        Guardar sobrescribe tu perfil backend existente para que los recursos downstream siempre apunten al nombre más reciente.
-                      </p>
-                    </div>
-                  </div>
-                </form>
               </div>
             </div>
           </div>
 
-          {/* Collaborator Directory */}
+          {/* Posts Grid */}
           <div className="group relative">
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
             
             <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Directorio de colaboradores</h2>
+                  <h2 className="text-2xl font-bold text-white mb-2">Tus Publicaciones</h2>
                   <div className="h-1 w-12 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 rounded-full mb-3"></div>
-                  <p className="text-sm text-gray-400">
-                    Cada trabajo de publicación puede referenciar estos IDs de perfil como propietarios.
-                  </p>
                 </div>
-                <span className="text-sm font-bold text-white bg-white/10 px-5 py-2.5 rounded-full border border-white/20">
-                  {profiles.length} {profiles.length === 1 ? 'perfil' : 'perfiles'}
-                </span>
+                
+                <Button
+                  variant="outline"
+                  onClick={fetchUserPosts}
+                  isLoading={isFetching}
+                >
+                  Actualizar
+                </Button>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-white/10 backdrop-blur-xl">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-black/40 text-gray-400 uppercase tracking-wider">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold">ID</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold">Nombre</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold">Email</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold">Creado</th>
-                      <th className="px-6 py-4"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {profiles.map((profile) => (
-                      <tr key={profile.id} className="hover:bg-white/5 transition-colors duration-200">
-                        <td className="px-6 py-4">
-                          <span className="font-mono text-xs text-purple-400 font-bold">#{profile.id}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-white font-medium">{profile.displayName}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-gray-300 text-sm">{profile.email}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-gray-400 text-xs">
-                            {profile.createdAt ? new Date(profile.createdAt).toLocaleString() : '—'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
+              {/* Posts List */}
+              <div className="space-y-4">
+                {filteredPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="group/post relative bg-black/40 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300 backdrop-blur-xl"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                      {/* Post Thumbnail */}
+                      {post.thumbnail && (
+                        <div className="flex-shrink-0">
+                          <img
+                            src={post.thumbnail}
+                            alt={post.title}
+                            className="w-20 h-20 rounded-xl object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Post Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                          <h3 className="text-lg font-semibold text-white group-hover/post:text-purple-300 transition-colors">
+                            {post.title}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(post.status)}
+                            {post.publishedAt && post.status === 'published' && (
+                              <span className="text-xs text-gray-400">
+                                {formatDate(post.publishedAt)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                          {post.content || 'Sin contenido...'}
+                        </p>
+                        
+                        {/* Tags */}
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {post.tags.slice(0, 3).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                            {post.tags.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded-lg text-xs">
+                                +{post.tags.length - 3} más
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Actions */}
+                        <div className="flex items-center gap-3">
                           <Button
-                            type="button"
                             variant="ghost"
-                            onClick={() => handleDeleteProfile(profile.id)}
-                            disabled={isDeleting !== null}
-                            isLoading={isDeleting === profile.id}
+                            size="sm"
+                            onClick={() => handleViewDetails(post)}
+                          >
+                            Ver detalles
+                          </Button>
+                          
+                          {post.status === 'draft' && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {/* Implement edit */}}
+                            >
+                              Editar
+                            </Button>
+                          )}
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePost(post.id)}
                           >
                             Eliminar
                           </Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!profiles.length && (
-                      <tr>
-                        <td className="px-6 py-8 text-center text-gray-500" colSpan={5}>
-                          <div className="flex flex-col items-center gap-3">
-                            <div className="text-4xl opacity-40">👥</div>
-                            <p className="text-sm">
-                              {isFetching ? 'Cargando perfiles...' : 'No hay perfiles registrados aún.'}
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {!filteredPosts.length && !isFetching && (
+                  <div className="text-center py-12">
+                    <div className="text-4xl opacity-40 mb-4">📝</div>
+                    <p className="text-gray-400 text-lg mb-2">
+                      {searchTerm || statusFilter !== 'all' 
+                        ? 'No se encontraron publicaciones con los filtros aplicados.' 
+                        : 'Aún no tienes publicaciones.'}
+                    </p>
+                    {searchTerm || statusFilter !== 'all' ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSearchTerm('');
+                          setStatusFilter('all');
+                        }}
+                      >
+                        Limpiar filtros
+                      </Button>
+                    ) : (
+                      <Button variant="primary">
+                        Crear primera publicación
+                      </Button>
                     )}
-                  </tbody>
-                </table>
+                  </div>
+                )}
+                
+                {isFetching && (
+                  <div className="text-center py-12">
+                    <Loader />
+                    <p className="text-gray-400 mt-4">Cargando publicaciones...</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Post Details Modal */}
+      {selectedPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl border border-white/10 p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-2xl font-bold text-white">{selectedPost.title}</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseDetails}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Estado:</span>
+                  <div className="mt-1">{getStatusBadge(selectedPost.status)}</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Creado:</span>
+                  <p className="text-white mt-1">{formatDate(selectedPost.createdAt)}</p>
+                </div>
+                {selectedPost.publishedAt && (
+                  <div>
+                    <span className="text-gray-400">Publicado:</span>
+                    <p className="text-white mt-1">{formatDate(selectedPost.publishedAt)}</p>
+                  </div>
+                )}
+                {selectedPost.updatedAt && (
+                  <div>
+                    <span className="text-gray-400">Actualizado:</span>
+                    <p className="text-white mt-1">{formatDate(selectedPost.updatedAt)}</p>
+                  </div>
+                )}
+              </div>
+              
+              {selectedPost.content && (
+                <div>
+                  <span className="text-gray-400 block mb-2">Contenido:</span>
+                  <p className="text-white bg-black/30 rounded-xl p-4 whitespace-pre-wrap">
+                    {selectedPost.content}
+                  </p>
+                </div>
+              )}
+              
+              {selectedPost.tags && selectedPost.tags.length > 0 && (
+                <div>
+                  <span className="text-gray-400 block mb-2">Etiquetas:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPost.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
 
-export default Profile;
+export default PostHistory;
