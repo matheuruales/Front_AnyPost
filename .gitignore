@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Logs and diagnostics
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*
+.envrc
+!.env.example
+
+# Tooling caches
+.eslintcache
+*.tsbuildinfo
+node_modules/.cache/
+.vite/
+
+# Testing and coverage
+coverage/
+*.lcov
+
+# Local tooling
+.turbo/
+.vercel/
+.history/
+.npm/
+.pnpm-store/
+
+# Editors and OS
+.DS_Store
+.vscode/
+.idea/
