@@ -20,3 +20,7 @@ npm install
 - build
 - preview
 
+
+## Estructura del proyecto
+(árbol resumido y propósito de cada carpeta)
+
