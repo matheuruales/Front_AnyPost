@@ -18,6 +18,12 @@ import {
   ImageGenerationResponse,
 } from '../types/backend';
 
+export interface UserPostQuery {
+  authUserId?: string | null;
+  profileId?: number | null;
+  email?: string | null;
+}
+
 export interface VideoUploadPayload {
   file: File;
   title: string;
@@ -69,7 +75,13 @@ export const backendApi = {
   deleteUserProfile: (id: number) => api.delete(`/user-profiles/${id}`),
 
   // User posts
-  getUserPosts: (authUserId: string) => withJsonData<UserPost[]>(api.get(`/users/${authUserId}/posts`)),
+  getUserPosts: (params: UserPostQuery) => {
+    const cleanParams: Record<string, string | number> = {};
+    if (params.authUserId) cleanParams.authUserId = params.authUserId;
+    if (params.profileId !== undefined && params.profileId !== null) cleanParams.profileId = params.profileId;
+    if (params.email) cleanParams.email = params.email;
+    return withJsonData<UserPost[]>(api.get('/user-posts', { params: cleanParams }));
+  },
   createUserPost: (authUserId: string, payload: UserPostRequest) =>
     withJsonData<UserPost>(api.post(`/users/${authUserId}/posts`, payload)),
   deleteUserPost: (postId: string) => api.delete(`/posts/${postId}`),
