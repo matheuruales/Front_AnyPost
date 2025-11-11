@@ -10,6 +10,8 @@ import {
   PublicationResultResponse,
   UserProfileRequest,
   UserProfileResponse,
+  UserPost,
+  UserPostRequest,
   VideoJobStatus,
   VideoJobCreationResponse,
   ImageGenerationRequest,
@@ -65,6 +67,12 @@ export const backendApi = {
   getUserProfiles: () => withJsonData<UserProfileResponse[]>(api.get('/user-profiles')),
   createUserProfile: (payload: UserProfileRequest) => withJsonData<UserProfileResponse>(api.post('/user-profiles', payload)),
   deleteUserProfile: (id: number) => api.delete(`/user-profiles/${id}`),
+
+  // User posts
+  getUserPosts: (authUserId: string) => withJsonData<UserPost[]>(api.get(`/users/${authUserId}/posts`)),
+  createUserPost: (authUserId: string, payload: UserPostRequest) =>
+    withJsonData<UserPost>(api.post(`/users/${authUserId}/posts`, payload)),
+  deleteUserPost: (postId: string) => api.delete(`/posts/${postId}`),
 
   // Video operations
   uploadVideoAsset: ({ file, title, description = '', ownerId, targets }: VideoUploadPayload) => {

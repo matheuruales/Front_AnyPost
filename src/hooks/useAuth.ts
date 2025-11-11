@@ -97,6 +97,7 @@ export const useAuth = (): AuthContextType => {
       await backendApi.createUserProfile({
         email: profileEmail,
         displayName: profileEmail.split('@')[0] || 'Creator',
+        authUserId: userCredential.user.uid,
       });
     } catch (error) {
       console.error('Error registering:', error);

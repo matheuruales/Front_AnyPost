@@ -47,11 +47,13 @@ export interface PublicationResultResponse extends PublicationResultRequest {
 export interface UserProfileRequest {
   email: string;
   displayName: string;
+  authUserId: string;
 }
 
 export interface UserProfileResponse extends UserProfileRequest {
   id: number;
   createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface VideoJobStatus {
@@ -83,4 +85,46 @@ export interface ImageGenerationResponse {
   quality: string;
   style: string;
   generatedAt?: string | null;
+}
+
+export interface PostPublication {
+  id: string;
+  network: string;
+  status: string;
+  publishedUrl?: string | null;
+  publishedAt?: string | null;
+}
+
+export interface PostPublicationRequest {
+  network: string;
+  status: string;
+  publishedUrl?: string | null;
+  publishedAt?: string | null;
+}
+
+export interface UserPostRequest {
+  title: string;
+  content?: string | null;
+  status?: string | null;
+  videoUrl?: string | null;
+  publishedAt?: string | null;
+  tags?: string[];
+  targetPlatforms?: string[];
+  publications?: PostPublicationRequest[];
+}
+
+export interface UserPost {
+  id: string;
+  title: string;
+  content?: string | null;
+  thumbnail?: string | null;
+  status: string;
+  videoUrl?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+  publishedAt?: string | null;
+  ownerAuthUserId?: string | null;
+  tags?: string[];
+  targetPlatforms?: string[];
+  publications?: PostPublication[];
 }
