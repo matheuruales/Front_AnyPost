@@ -28,7 +28,7 @@ export interface VideoUploadPayload {
   file: File;
   title: string;
   description?: string;
-  ownerId: number;
+  authUserId: string;
   targets: string;
 }
 
@@ -87,12 +87,12 @@ export const backendApi = {
   deleteUserPost: (postId: string) => api.delete(`/posts/${postId}`),
 
   // Video operations
-  uploadVideoAsset: ({ file, title, description = '', ownerId, targets }: VideoUploadPayload) => {
+  uploadVideoAsset: ({ file, title, description = '', authUserId, targets }: VideoUploadPayload) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
     formData.append('description', description);
-    formData.append('ownerId', ownerId.toString());
+    formData.append('authUserId', authUserId);
     formData.append('targets', targets);
 
     return withJsonData<string>(

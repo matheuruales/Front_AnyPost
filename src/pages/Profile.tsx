@@ -59,15 +59,23 @@ const PostHistory: React.FC = () => {
       setIsFetching(false);
       return;
     }
-    
+
     setIsFetching(true);
     try {
+      console.log('Fetching posts for user:', {
+        authUserId: currentUser.uid,
+        email: currentUser.email
+      });
+
       const userPosts = await backendApi.getUserPosts({
         authUserId: currentUser.uid,
         email: currentUser.email ?? undefined,
       });
+
+      console.log('Received posts from backend:', userPosts);
       setPosts(userPosts);
     } catch (error) {
+      console.error('Error fetching posts:', error);
       handleError(error, 'No se pudieron cargar las publicaciones.');
     } finally {
       setIsFetching(false);

@@ -2,7 +2,6 @@ import React, { useMemo, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { useAuth } from '../hooks/useAuth';
 import { backendApi } from '../services/backend';
-import { API_BASE_URL as RAW_API_BASE_URL } from '../services/api';
 import Loader from '../components/ui/Loader';
 
 const TARGET_OPTIONS = [
@@ -67,9 +66,6 @@ const TARGET_OPTIONS = [
     )
   },
 ] as const;
-
-const NORMALIZED_API_BASE_URL = RAW_API_BASE_URL.replace(/\/$/, '');
-const UPLOAD_ENDPOINT = `${NORMALIZED_API_BASE_URL}/videos/upload`;
 
 type TargetValue = (typeof TARGET_OPTIONS)[number]['value'];
 type FileType = 'video' | 'image';
@@ -155,7 +151,6 @@ const Dashboard: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ownerId, setOwnerId] = useState('1');
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileType, setFileType] = useState<FileType>('video');
@@ -220,13 +215,12 @@ const Dashboard: React.FC = () => {
         file,
         title: title.trim(),
         description: description.trim(),
-        ownerId: Number(ownerId) || 1,
+        authUserId: currentUser.uid,
         targets: targetsPreview,
       });
       setSuccessMessage(response);
       setTitle('');
       setDescription('');
-      setOwnerId('1');
       setFile(null);
       setFilePreview(null);
       setSelectedTargets(['youtube']);
@@ -433,20 +427,6 @@ const Dashboard: React.FC = () => {
                           placeholder="Escribe el copy principal o notas adicionales..."
                         />
                       </div>
-                      
-                      <div>
-                        <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                          Owner ID
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={ownerId}
-                          onChange={(event) => setOwnerId(event.target.value)}
-                          className="w-32 rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl"
-                          required
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -581,12 +561,6 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* API Info */}
-              <div className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-xl">
-                <p className="text-xs text-gray-500 mb-1">Endpoint API</p>
-                <p className="font-mono text-xs text-blue-400 break-all">{UPLOAD_ENDPOINT}</p>
               </div>
             </div>
           </div>
