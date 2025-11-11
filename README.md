@@ -15,3 +15,8 @@ A modern social platform frontend built with React, TypeScript, Vite, and Tailwi
 1. Install dependencies:
 ```bash
 npm install
+## Scripts
+- dev
+- build
+- preview
+
