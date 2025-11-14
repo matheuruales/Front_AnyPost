@@ -1,30 +1,31 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { backendApi } from '../services/backend';
 import { ImageGenerationResponse } from '../types/backend';
+import { PromptHistoryStack, PromptEntry } from '../data-structures/PromptHistoryStack';
+import Loader from '../components/ui/Loader';
 
 const sizeOptions = [
-  { value: '1024x1024', label: '1024 x 1024 (Cuadrada)' },
+  { value: '1024x1024', label: '1024 x 1024 (Square)' },
   { value: '1024x1792', label: '1024 x 1792 (Vertical)' },
   { value: '1792x1024', label: '1792 x 1024 (Horizontal)' },
 ];
 
 const qualityOptions = [
-  { value: 'standard', label: 'Estándar' },
-  { value: 'hd', label: 'Alta definición' },
+  { value: 'standard', label: 'Standard' },
+  { value: 'hd', label: 'High Definition' },
 ];
 
 const styleOptions = [
-  { value: 'vivid', label: 'Vívido' },
+  { value: 'vivid', label: 'Vivid' },
   { value: 'natural', label: 'Natural' },
 ];
 
-const IMAGE_HISTORY_STORAGE_KEY = 'anypost-ai-image-history';
-const MAX_HISTORY_ITEMS = 12;
+const PROMPT_HISTORY_STORAGE_KEY = 'anypost-prompt-history';
+const MAX_HISTORY_ITEMS = 50;
 
-type ImageHistoryEntry = ImageGenerationResponse;
 type TargetOption = {
   value: string;
   label: string;
@@ -97,100 +98,66 @@ const TARGET_OPTIONS: TargetOption[] = [
 
 type TargetValue = (typeof TARGET_OPTIONS)[number]['value'];
 
-const TargetSwitch: React.FC<{
-  option: TargetOption;
-  active: boolean;
-  onToggle: () => void;
-}> = ({ option, active, onToggle }) => {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`group relative flex items-center gap-3 rounded-xl border px-5 py-4 text-sm font-bold uppercase tracking-wide transition-all duration-300 hover:scale-[1.02] ${
-        active
-          ? 'bg-white/10 text-white border-white/20 shadow-lg backdrop-blur-xl'
-          : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20 hover:bg-white/10'
-      }`}
-    >
-      <span
-        className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold transition-all duration-300 group-hover:scale-110"
-        style={{
-          backgroundColor: active ? `${option.color}20` : 'transparent',
-          color: option.color,
-          border: `2px solid ${option.color}40`,
-        }}
-      >
-        {option.icon}
-      </span>
-      <span className="transition-all duration-300 flex-1 text-left">{option.label}</span>
-      <span
-        className={`ml-auto flex h-6 w-12 items-center rounded-full px-1 transition-all duration-300 ${
-          active ? 'bg-green-500' : 'bg-gray-700'
-        }`}
-      >
-        <span
-          className={`h-4 w-4 rounded-full bg-white transition-all duration-300 shadow-lg ${
-            active ? 'translate-x-7' : 'translate-x-0'
-          }`}
-        />
-      </span>
-    </button>
-  );
-};
-
 const AIDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { logout, currentUser } = useAuth();
+  
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState(sizeOptions[0].value);
   const [quality, setQuality] = useState(qualityOptions[0].value);
   const [style, setStyle] = useState(styleOptions[0].value);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<ImageHistoryEntry | null>(null);
-  const [history, setHistory] = useState<ImageHistoryEntry[]>([]);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<ImageGenerationResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ownerId, setOwnerId] = useState('1');
   const [selectedTargets, setSelectedTargets] = useState<TargetValue[]>(['youtube']);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+
+  // Initialize prompt history stack
+  const promptHistory = useMemo(() => new PromptHistoryStack(MAX_HISTORY_ITEMS), []);
+
+  // Load prompt history from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const stored = window.localStorage.getItem(PROMPT_HISTORY_STORAGE_KEY);
+      if (stored) {
+        const parsed: PromptEntry[] = JSON.parse(stored);
+        parsed.forEach(entry => promptHistory.push(entry));
+      }
+    } catch (error) {
+      console.warn('Failed to load prompt history', error);
+    }
+  }, [promptHistory]);
+
+  // Save prompt history to localStorage
+  const savePromptHistory = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const allPrompts = promptHistory.getAll();
+      window.localStorage.setItem(PROMPT_HISTORY_STORAGE_KEY, JSON.stringify(allPrompts));
+    } catch (error) {
+      console.warn('Failed to save prompt history', error);
+    }
+  }, [promptHistory]);
+
   const targetsPreview = useMemo(() => selectedTargets.join(', '), [selectedTargets]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    try {
-      const storedHistory = window.localStorage.getItem(IMAGE_HISTORY_STORAGE_KEY);
-      if (storedHistory) {
-        const parsed: ImageHistoryEntry[] = JSON.parse(storedHistory);
-        setHistory(parsed);
-        if (parsed.length > 0) {
-          setGeneratedImage(parsed[0]);
-        }
-      }
-    } catch (storageError) {
-      console.warn('No se pudo recuperar el historial de imágenes', storageError);
-    } finally {
-      setHistoryLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!historyLoaded || typeof window === 'undefined') {
-      return;
-    }
-    window.localStorage.setItem(IMAGE_HISTORY_STORAGE_KEY, JSON.stringify(history));
-  }, [history, historyLoaded]);
+  const toggleTarget = (value: TargetValue) => {
+    setSelectedTargets((prev) =>
+      prev.includes(value) ? prev.filter((target) => target !== value) : [...prev, value]
+    );
+  };
 
   const handleGenerateImage = async (event?: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
-      setErrorMessage('Por favor describe la escena que quieres generar.');
+      setErrorMessage('Please describe the scene you want to generate.');
       return;
     }
 
@@ -205,18 +172,22 @@ const AIDashboard: React.FC = () => {
         style,
       });
 
-      const nextResult: ImageHistoryEntry = {
-        ...response,
-        generatedAt: response.generatedAt ?? new Date().toISOString(),
-      };
+      setGeneratedImage(response);
 
-      setGeneratedImage(nextResult);
-      setHistory((prev) => {
-        const filtered = prev.filter((item) => item.imageUrl !== nextResult.imageUrl);
-        return [nextResult, ...filtered].slice(0, MAX_HISTORY_ITEMS);
-      });
+      // Add to prompt history
+      const promptEntry: PromptEntry = {
+        id: `prompt-${Date.now()}-${Math.random()}`,
+        prompt: trimmedPrompt,
+        size,
+        quality,
+        style,
+        timestamp: Date.now(),
+        imageUrl: response.imageUrl,
+      };
+      promptHistory.push(promptEntry);
+      savePromptHistory();
     } catch (error) {
-      console.error('Error generando imagen', error);
+      console.error('Error generating image', error);
       if (axios.isAxiosError(error)) {
         const responseData = error.response?.data as { message?: string; error?: string } | string | undefined;
         let backendMessage: string | undefined;
@@ -225,54 +196,30 @@ const AIDashboard: React.FC = () => {
         } else if (typeof responseData === 'string') {
           backendMessage = responseData;
         }
-        setErrorMessage(backendMessage || 'No se pudo generar la imagen. Intenta nuevamente.');
+        setErrorMessage(backendMessage || 'Failed to generate image. Please try again.');
       } else {
-        setErrorMessage('Algo salió mal al generar la imagen.');
+        setErrorMessage('Something went wrong while generating the image.');
       }
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleDownloadImage = () => {
-    if (!generatedImage?.imageUrl) {
-      return;
-    }
-    const link = document.createElement('a');
-    link.href = generatedImage.imageUrl;
-    link.setAttribute('download', `anypost-ai-${Date.now()}.png`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleHistorySelect = (entry: ImageHistoryEntry) => {
-    setGeneratedImage(entry);
+  const handlePromptSelect = (entry: PromptEntry) => {
     setPrompt(entry.prompt);
     setSize(entry.size);
     setQuality(entry.quality);
     setStyle(entry.style);
+    if (entry.imageUrl) {
+      setGeneratedImage({
+        prompt: entry.prompt,
+        imageUrl: entry.imageUrl,
+        size: entry.size,
+        quality: entry.quality,
+        style: entry.style,
+      });
+    }
     setErrorMessage(null);
-  };
-
-  const handleOpenImageInNewTab = () => {
-    if (!generatedImage?.imageUrl) {
-      return;
-    }
-    window.open(generatedImage.imageUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleClearHistory = () => {
-    setHistory([]);
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(IMAGE_HISTORY_STORAGE_KEY);
-    }
-  };
-
-  const toggleTarget = (value: TargetValue) => {
-    setSelectedTargets((prev) =>
-      prev.includes(value) ? prev.filter((target) => target !== value) : [...prev, value]
-    );
   };
 
   const convertBlobToJpeg = async (blob: Blob): Promise<Blob> => {
@@ -292,7 +239,7 @@ const AIDashboard: React.FC = () => {
         const context = canvas.getContext('2d');
 
         if (!context) {
-          reject(new Error('No se pudo preparar el lienzo para convertir la imagen.'));
+          reject(new Error('Could not prepare canvas for image conversion.'));
           return;
         }
 
@@ -300,7 +247,7 @@ const AIDashboard: React.FC = () => {
         canvas.toBlob(
           (convertedBlob) => {
             if (!convertedBlob) {
-              reject(new Error('No se pudo convertir la imagen generada a JPG.'));
+              reject(new Error('Could not convert generated image to JPG.'));
               return;
             }
             resolve(convertedBlob);
@@ -312,71 +259,70 @@ const AIDashboard: React.FC = () => {
 
       image.onerror = () => {
         URL.revokeObjectURL(objectUrl);
-        reject(new Error('No se pudo procesar la imagen generada para publicarla.'));
+        reject(new Error('Could not process generated image for publishing.'));
       };
 
       image.src = objectUrl;
     });
   };
 
-  const createUploadFileFromGeneratedImage = async (image: ImageHistoryEntry) => {
+  const createUploadFileFromGeneratedImage = async (image: ImageGenerationResponse) => {
     const blob = await backendApi.downloadGeneratedImage(image.imageUrl);
 
     if (!blob.size) {
-      throw new Error('La imagen generada no contiene datos válidos.');
+      throw new Error('Generated image does not contain valid data.');
     }
 
     const jpegBlob = await convertBlobToJpeg(blob);
     return new File([jpegBlob], `anypost-ai-${Date.now()}.jpg`, { type: 'image/jpeg' });
   };
 
-  const resetPublishForm = () => {
-    setTitle('');
-    setDescription('');
-    setOwnerId('1');
-    setSelectedTargets(['youtube']);
-  };
-
-  const publishGeneratedImage = async () => {
-    if (!generatedImage) {
-      throw new Error('Genera una imagen antes de publicarla.');
-    }
-
-    const file = await createUploadFileFromGeneratedImage(generatedImage);
-
-    return backendApi.uploadVideoAsset({
-      file,
-      title: title.trim() || 'Imagen generada con IA',
-      description: description.trim(),
-      ownerId: Number(ownerId) || 1,
-      targets: targetsPreview,
-    });
-  };
-
-  const handlePublishImage = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handlePublishImage = async () => {
     setPublishSuccess(null);
     setPublishError(null);
 
     if (!generatedImage?.imageUrl) {
-      setPublishError('Genera una imagen antes de intentar publicarla.');
+      setPublishError('Generate an image before trying to publish it.');
       return;
     }
 
     if (!selectedTargets.length) {
-      setPublishError('Selecciona al menos una red social.');
+      setPublishError('Select at least one social network.');
+      return;
+    }
+
+    if (!title.trim()) {
+      setPublishError('Please enter a title.');
       return;
     }
 
     setIsPublishing(true);
     try {
-      const response = await publishGeneratedImage();
-      setPublishSuccess(response);
-      resetPublishForm();
+      const file = await createUploadFileFromGeneratedImage(generatedImage);
+
+      const response = await backendApi.uploadVideoAsset({
+        file,
+        title: title.trim(),
+        description: description.trim(),
+        authUserId: currentUser!.uid,
+        targets: targetsPreview,
+      });
+
+      setPublishSuccess('Image published successfully!');
+      
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setSelectedTargets(['youtube']);
+      
+      // Navigate to dashboard after 2 seconds
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
     } catch (error) {
-      console.error('Error al publicar imagen generada', error);
+      console.error('Error publishing generated image', error);
       const message =
-        error instanceof Error ? error.message : 'No se pudo enviar la imagen. Intenta nuevamente.';
+        error instanceof Error ? error.message : 'Could not publish image. Please try again.';
       setPublishError(message);
     } finally {
       setIsPublishing(false);
@@ -388,542 +334,428 @@ const AIDashboard: React.FC = () => {
       await logout();
       navigate('/login');
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('Error logging out:', error);
     }
   };
 
+  const allPrompts = promptHistory.getAll();
+
   return (
     <div className="relative min-h-screen bg-black text-white overflow-hidden">
-      {/* Animated Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900"></div>
       
-      {/* Animated mesh gradient overlay */}
       <div className="fixed inset-0 opacity-30">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Content wrapper */}
-      <div className="relative z-10">
-        {/* Enhanced Navbar */}
-        <nav className="border-b border-white/5 bg-black/60 backdrop-blur-2xl">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex h-20 items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 blur-md opacity-75"></div>
-                  <div className="relative h-3 w-3 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500"></div>
-                </div>
-                <p className="text-base font-bold uppercase tracking-[0.3em] bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                  Anypost
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-6">
-                {currentUser?.email && (
-                  <div className="flex items-center gap-3 rounded-full bg-white/5 px-5 py-2.5 border border-white/10 backdrop-blur-xl">
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-full bg-green-500 blur-sm"></div>
-                      <div className="relative h-2 w-2 rounded-full bg-green-500"></div>
-                    </div>
-                    <p className="text-sm text-gray-300">
-                      <span className="text-gray-500">Conectado como</span>{' '}
-                      <span className="font-semibold text-white">{currentUser.email}</span>
-                    </p>
-                  </div>
-                )}
-                
-                <button
-                  onClick={() => navigate('/creator-hub')}
-                  className="group relative overflow-hidden rounded-xl bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Volver al hub
-                  </span>
-                </button>
-
-                <button
-                  onClick={handleLogout}
-                  className="group relative overflow-hidden rounded-xl bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20 hover:scale-105"
-                >
-                  <span className="relative z-10">Cerrar sesión</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        {/* Main Content */}
-        <div className="mx-auto max-w-7xl px-6 py-12">
-          {/* Header */}
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 border border-white/10 backdrop-blur-xl">
-                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"></span>
-                <span className="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
-                  Generador IA activo
-                </span>
-              </div>
-            </div>
-            
-            <h1 className="text-5xl md:text-6xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-                Laboratorio creativo
-              </span>{' '}
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                IA
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-12">
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => navigate('/creator-hub')}
+              className="group relative overflow-hidden rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Hub
               </span>
-            </h1>
-            
-            <p className="text-gray-400 text-lg max-w-3xl">
-              Experimenta con prompts, genera imágenes en segundos y sincroniza tus assets con el resto del flujo creativo.
-            </p>
+            </button>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 blur-md opacity-75"></div>
+              <div className="relative h-3 w-3 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500"></div>
+            </div>
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-gray-500">Anypost AI</p>
           </div>
+          
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
+              AI Creative Lab
+            </span>
+          </h1>
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <p className="text-gray-400 text-lg max-w-2xl">
+              Generate images with AI, experiment with prompts and publish directly to your social networks.
+            </p>
+            
+            {/* Social Media Toggles */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {TARGET_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleTarget(option.value)}
+                  className={`group relative flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-all duration-300 ${
+                    selectedTargets.includes(option.value)
+                      ? 'bg-white/10 text-white border-white/20 shadow-lg'
+                      : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20 hover:bg-white/10'
+                  }`}
+                >
+                  <span
+                    className="flex h-5 w-5 items-center justify-center rounded transition-all duration-300"
+                    style={{
+                      backgroundColor: selectedTargets.includes(option.value) ? `${option.color}20` : 'transparent',
+                      color: option.color,
+                    }}
+                  >
+                    {option.icon}
+                  </span>
+                  <span className="hidden lg:inline">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
-          {/* Main Grid */}
-          <div className="grid gap-8 lg:grid-cols-[1fr,400px]">
-            {/* Left Column */}
-            <div className="space-y-8">
-              {/* Generator Card */}
+        {/* Main Content Area - Grid Layout like UploadFromPC */}
+        <div className="grid gap-8 lg:grid-cols-[1fr,400px]">
+          {/* Left Panel - History, Prompt Input, Options */}
+          <div className="space-y-6">
+            <form onSubmit={handleGenerateImage} className="space-y-6">
+              {/* Prompt History - Above Input (Stack LIFO) */}
               <div className="group relative">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                 
-                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
-                  <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Paso 1</span>
-                      <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent max-w-[100px]"></div>
+                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Previous</span>
+                        <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent max-w-[100px]"></div>
+                      </div>
+                      <h2 className="text-xl font-bold text-white">Prompt History</h2>
                     </div>
-                    <h2 className="text-2xl font-bold text-white">Generador de imágenes con IA</h2>
-                    <p className="text-sm text-white/60 mt-2">
-                      Describe una escena, ajusta los parámetros y genera assets listos para tus campañas.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-8 lg:grid-cols-2">
-                    {/* Form */}
-                    <form className="space-y-6" onSubmit={handleGenerateImage}>
-                      <div>
-                        <label htmlFor="prompt" className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                          Descripción
-                        </label>
-                        <textarea
-                          id="prompt"
-                          value={prompt}
-                          onChange={(event) => setPrompt(event.target.value)}
-                          placeholder="Ej: Astronauta montando un corgi en un desfile futurista."
-                          className="w-full h-32 rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl resize-none"
-                          disabled={isGenerating}
-                        />
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        <div>
-                          <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">Tamaño</label>
-                          <select
-                            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-white/30 focus:outline-none"
-                            value={size}
-                            onChange={(event) => setSize(event.target.value)}
-                            disabled={isGenerating}
-                          >
-                            {sizeOptions.map((option) => (
-                              <option key={option.value} value={option.value} className="bg-gray-900">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">Calidad</label>
-                          <select
-                            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-white/30 focus:outline-none"
-                            value={quality}
-                            onChange={(event) => setQuality(event.target.value)}
-                            disabled={isGenerating}
-                          >
-                            {qualityOptions.map((option) => (
-                              <option key={option.value} value={option.value} className="bg-gray-900">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">Estilo</label>
-                          <select
-                            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-white/30 focus:outline-none"
-                            value={style}
-                            onChange={(event) => setStyle(event.target.value)}
-                            disabled={isGenerating}
-                          >
-                            {styleOptions.map((option) => (
-                              <option key={option.value} value={option.value} className="bg-gray-900">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {errorMessage && (
-                        <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 backdrop-blur-xl">
-                          <p className="text-sm text-red-300">{errorMessage}</p>
-                        </div>
-                      )}
-
+                    {allPrompts.length > 0 && (
                       <button
-                        type="submit"
-                        disabled={isGenerating}
-                        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-6 py-4 text-sm font-bold uppercase tracking-wide text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          promptHistory.clear();
+                          savePromptHistory();
+                        }}
+                        className="text-xs text-gray-500 hover:text-white transition-colors"
                       >
-                        <span className="relative z-10 flex items-center justify-center gap-2">
-                          {isGenerating ? (
-                            <>
-                              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Generando imagen...
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                              </svg>
-                              Generar imagen
-                            </>
-                          )}
-                        </span>
-                        <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
+                        Clear
                       </button>
-                    </form>
-
-                    {/* Preview */}
-                    <div className="space-y-4">
-                      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-xl">
-                        <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-black">
-                          {generatedImage?.imageUrl ? (
-                            <img
-                              src={generatedImage.imageUrl}
-                              alt={generatedImage.revisedPrompt || generatedImage.prompt}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="flex h-full flex-col items-center justify-center gap-4 text-center text-white/50">
-                              <span className="text-5xl">🖼️</span>
-                              <p className="text-sm font-medium px-4">La imagen generada aparecerá aquí</p>
-                            </div>
-                          )}
-
-                          {isGenerating && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 text-white backdrop-blur-sm">
-                              <svg className="h-8 w-8 animate-spin text-white" viewBox="0 0 24 24">
-                                <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path
-                                  className="opacity-80"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8v4l3-3-3-3v4A8 8 0 104 12z"
-                                />
-                              </svg>
-                              <p className="text-sm font-medium">Generando magia visual...</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {generatedImage && (
-                          <div className="mt-4 space-y-4">
-                            <div className="flex flex-wrap gap-2">
-                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">{generatedImage.size}</span>
-                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">{generatedImage.quality}</span>
-                              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">{generatedImage.style}</span>
-                            </div>
-                            {generatedImage.revisedPrompt && (
-                              <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 p-4 backdrop-blur-xl">
-                                <p className="text-xs uppercase tracking-[0.3em] text-purple-400 mb-2">Prompt optimizado</p>
-                                <p className="text-sm leading-relaxed text-white/80">{generatedImage.revisedPrompt}</p>
-                              </div>
-                            )}
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={handleDownloadImage}
-                                disabled={!generatedImage.imageUrl}
-                                className="flex-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
-                              >
-                                Descargar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleOpenImageInNewTab}
-                                disabled={!generatedImage.imageUrl}
-                                className="flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-semibold text-white transition hover:bg-black/60 disabled:opacity-50"
-                              >
-                                Abrir
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              {/* History */}
-              {history.length > 0 && (
-                <div className="group relative">
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                   
-                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="text-xl font-bold text-white">Historial reciente</h3>
-                        <p className="text-sm text-white/60 mt-1">Tus últimos {MAX_HISTORY_ITEMS} renders</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleClearHistory}
-                        className="text-sm font-semibold text-white/60 hover:text-white transition"
-                      >
-                        Limpiar
-                      </button>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {history.map((item, index) => (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {allPrompts.length === 0 ? (
+                      <p className="text-xs text-gray-500 text-center py-4">No previous prompts</p>
+                    ) : (
+                      allPrompts.map((entry) => (
                         <button
+                          key={entry.id}
                           type="button"
-                          key={`${item.imageUrl}-${index}`}
-                          onClick={() => handleHistorySelect(item)}
-                          className="group/history overflow-hidden rounded-xl border border-white/10 bg-black/30 text-left transition hover:border-white/30 hover:scale-[1.02]"
+                          onClick={() => handlePromptSelect(entry)}
+                          className="w-full text-left rounded-lg border border-white/10 bg-black/20 px-3 py-2 hover:bg-black/40 hover:border-white/20 transition-all group"
                         >
-                          <div className="relative aspect-square w-full overflow-hidden">
-                            <img
-                              src={item.imageUrl}
-                              alt={item.revisedPrompt || item.prompt}
-                              className="h-full w-full object-cover transition duration-500 group-hover/history:scale-105"
-                              loading="lazy"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                          </div>
-                          <div className="p-3">
-                            <p className="text-xs text-white/70 line-clamp-2">{item.revisedPrompt || item.prompt}</p>
-                            <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
-                              <span>{item.size.split('x')[0]}</span>
-                              <span>•</span>
-                              <span>{item.style}</span>
-                            </div>
+                          <p className="text-xs text-white line-clamp-1 group-hover:text-purple-300 transition-colors">
+                            {entry.prompt}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+                            <span className="text-[10px]">{entry.size.split('x')[0]}</span>
+                            <span className="text-[10px]">•</span>
+                            <span className="text-[10px]">{entry.style}</span>
                           </div>
                         </button>
-                      ))}
-                    </div>
+                      ))
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Publish Form */}
+              {/* Prompt Input */}
               <div className="group relative">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                 
-                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
-                  <div className="mb-8">
+                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                  <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Paso 2</span>
+                      <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Step 1</span>
                       <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent max-w-[100px]"></div>
                     </div>
-                    <h2 className="text-2xl font-bold text-white">Publicar imagen</h2>
-                    <p className="text-sm text-white/60 mt-2">
-                      Envía tu asset directamente al backend para distribuirlo en múltiples plataformas
-                    </p>
+                    <h2 className="text-xl font-bold text-white">What do you want to do today?</h2>
                   </div>
-
-                  <form className="space-y-6" onSubmit={handlePublishImage}>
-                    {/* Social Networks */}
-                    <div>
-                      <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                        Redes sociales
-                      </label>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {TARGET_OPTIONS.map((option) => (
-                          <TargetSwitch
-                            key={option.value}
-                            option={option}
-                            active={selectedTargets.includes(option.value)}
-                            onToggle={() => toggleTarget(option.value)}
-                          />
-                        ))}
-                      </div>
-                      <p className="mt-3 text-xs text-white/50">
-                        Seleccionadas: {selectedTargets.length ? targetsPreview : 'ninguna'}
-                      </p>
-                    </div>
-
-                    {/* Details */}
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                          Título
-                        </label>
-                        <input
-                          type="text"
-                          value={title}
-                          onChange={(event) => setTitle(event.target.value)}
-                          placeholder="Ej: Campaña IA Neon"
-                          className="w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                          Owner ID
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={ownerId}
-                          onChange={(event) => setOwnerId(event.target.value)}
-                          className="w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                        Descripción
-                      </label>
-                      <textarea
-                        value={description}
-                        onChange={(event) => setDescription(event.target.value)}
-                        placeholder="Breve resumen para tus colaboradores."
-                        className="h-24 w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl resize-none"
-                      />
-                    </div>
-
-                    {publishError && (
-                      <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 backdrop-blur-xl">
-                        <p className="text-sm text-red-300">{publishError}</p>
-                      </div>
-                    )}
-                    {publishSuccess && (
-                      <div className="rounded-xl bg-green-500/10 border border-green-500/30 px-4 py-3 backdrop-blur-xl">
-                        <p className="text-sm text-green-300">{publishSuccess}</p>
-                      </div>
-                    )}
-
+                  
+                  <div className="relative">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="E.g. Give me a video to promote a puppy costume party event."
+                      className="w-full h-32 rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl resize-none"
+                      disabled={isGenerating}
+                    />
                     <button
                       type="submit"
-                      disabled={!generatedImage?.imageUrl || isPublishing}
-                      className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-8 py-5 text-base font-bold uppercase tracking-wide text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      disabled={isGenerating || !prompt.trim()}
+                      className="absolute bottom-4 right-4 rounded-lg bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 p-2 text-white transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <span className="relative z-10 flex items-center justify-center gap-3">
-                        {isPublishing ? (
-                          <>
-                            <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Enviando asset...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            Publicar imagen generada
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </>
-                        )}
-                      </span>
-                      <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
                     </button>
-                    {!generatedImage?.imageUrl && (
-                      <p className="text-xs text-white/40 text-center">
-                        Genera y selecciona una imagen antes de publicar
-                      </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="group relative">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
+                
+                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Step 2</span>
+                      <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent max-w-[100px]"></div>
+                    </div>
+                    <h2 className="text-xl font-bold text-white">Generation Options</h2>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-2 block">Size</label>
+                      <select
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                        value={size}
+                        onChange={(e) => setSize(e.target.value)}
+                        disabled={isGenerating}
+                      >
+                        {sizeOptions.map((option) => (
+                          <option key={option.value} value={option.value} className="bg-gray-900">
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-2 block">Quality</label>
+                      <select
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                        value={quality}
+                        onChange={(e) => setQuality(e.target.value)}
+                        disabled={isGenerating}
+                      >
+                        {qualityOptions.map((option) => (
+                          <option key={option.value} value={option.value} className="bg-gray-900">
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-2 block">Style</label>
+                      <select
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                        value={style}
+                        onChange={(e) => setStyle(e.target.value)}
+                        disabled={isGenerating}
+                      >
+                        {styleOptions.map((option) => (
+                          <option key={option.value} value={option.value} className="bg-gray-900">
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {errorMessage && (
+                <div className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 backdrop-blur-xl">
+                  <p className="text-sm text-red-300">{errorMessage}</p>
+                </div>
+              )}
+            </form>
+          </div>
+
+          {/* Right Panel - Image Viewer and Upload */}
+          <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
+            {/* Image Viewer */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
+              
+              <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                <div className="text-center mb-4">
+                  <p className="text-sm font-bold uppercase tracking-[0.3em] text-gray-400 mb-2">Preview</p>
+                  <p className="text-xs text-gray-500">
+                    Generated Image {generatedImage ? '· Ready' : '· No image'}
+                  </p>
+                </div>
+                
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900 to-black shadow-inner">
+                  {generatedImage?.imageUrl ? (
+                    <>
+                      <img
+                        src={generatedImage.imageUrl}
+                        alt={generatedImage.revisedPrompt || generatedImage.prompt}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      {isGenerating && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white backdrop-blur-sm">
+                          <svg className="h-6 w-6 animate-spin text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path
+                              className="opacity-80"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4l3-3-3-3v4A8 8 0 104 12z"
+                            />
+                          </svg>
+                          <p className="text-xs font-medium">Generating...</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-white/50">
+                      <span className="text-4xl">🖼️</span>
+                      <p className="text-xs font-medium px-4">Generated image will appear here</p>
+                    </div>
+                  )}
+                </div>
+
+                {generatedImage && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">
+                        {generatedImage.size}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">
+                        {generatedImage.quality}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/60">
+                        {generatedImage.style}
+                      </span>
+                    </div>
+                    {generatedImage.revisedPrompt && (
+                      <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 p-3 backdrop-blur-xl">
+                        <p className="text-xs uppercase tracking-[0.3em] text-purple-400 mb-2">Optimized Prompt</p>
+                        <p className="text-sm leading-relaxed text-white/80 line-clamp-2">{generatedImage.revisedPrompt}</p>
+                      </div>
                     )}
-                  </form>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Title and Description */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
+              
+              <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Step 3</span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent max-w-[100px]"></div>
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Content Details</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
+                      Publication Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter your campaign title"
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
+                      Description
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Write the main copy or additional notes..."
+                      className="h-32 w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl resize-none"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Sidebar */}
-            <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
-              {/* Status */}
-              <div className="group relative">
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
-                
-                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
-                  <div className="mb-4">
-                    <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Estado</span>
+            {/* Upload Button and Status */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
+              
+              <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`relative h-3 w-3 rounded-full ${
+                    publishSuccess ? 'bg-green-500' : 
+                    publishError ? 'bg-red-500' : 
+                    'bg-blue-500'
+                  }`}>
+                    <div className={`absolute inset-0 rounded-full animate-pulse ${
+                      publishSuccess ? 'bg-green-500' : 
+                      publishError ? 'bg-red-500' : 
+                      'bg-blue-500'
+                    } blur-md`}></div>
                   </div>
-                  <div className="rounded-xl bg-black/40 border border-white/10 p-4 backdrop-blur-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <p className="text-lg font-bold text-white">Generador activo</p>
-                    </div>
-                    <p className="text-sm text-white/60">
-                      El generador de imágenes IA está operativo y listo para crear
+                  <p className="text-sm font-bold uppercase tracking-[0.3em] text-gray-400">Status</p>
+                </div>
+                
+                <div className={`rounded-xl p-4 text-sm transition-all duration-300 backdrop-blur-xl mb-4 ${
+                  publishSuccess 
+                    ? 'bg-green-500/10 text-green-300 border border-green-500/30' 
+                    : publishError 
+                    ? 'bg-red-500/10 text-red-300 border border-red-500/30'
+                    : 'bg-blue-500/10 text-blue-300 border border-blue-500/30'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl flex-shrink-0">
+                      {publishSuccess ? '✅' : publishError ? '❌' : '⚡'}
+                    </span>
+                    <p className="font-medium leading-relaxed">
+                      {publishSuccess
+                        ? publishSuccess
+                        : publishError
+                        ? publishError
+                        : 'Ready to publish. Generate an image and complete the form.'}
                     </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Quick Notes */}
-              <div className="group relative">
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
-                
-                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
-                  <div className="mb-4">
-                    <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Guía rápida</span>
-                  </div>
-                  <ul className="space-y-3">
-                    {[
-                      'Describe tu idea en el prompt y ajusta los parámetros',
-                      'Genera la imagen y revisa el resultado',
-                      'Publica directamente en tus redes sociales'
-                    ].map((note, index) => (
-                      <li key={index} className="flex items-start gap-3 rounded-xl bg-black/40 border border-white/10 p-3 backdrop-blur-xl">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400 border border-purple-500/30">
-                          {index + 1}
-                        </span>
-                        <p className="text-sm text-white/70 leading-relaxed">{note}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Next Step */}
-              <div className="group relative">
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
-                
-                <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)] text-center">
-                  <div className="mb-4">
-                    <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Siguiente paso</span>
-                  </div>
-                  <p className="text-sm text-white/70 leading-relaxed mb-6">
-                    Vuelve al hub para elegir otro flujo o ve al dashboard clásico
-                  </p>
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="group/btn relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-6 py-3 text-sm font-bold uppercase tracking-wide text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-lg shadow-black/50"
-                  >
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      Ir al dashboard
-                      <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                    <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover/btn:translate-y-0 transition-transform duration-300"></div>
-                  </button>
-                </div>
+                <button
+                  onClick={handlePublishImage}
+                  disabled={!generatedImage?.imageUrl || isPublishing || !title.trim()}
+                  className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-8 py-5 text-base font-bold uppercase tracking-wide text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-3">
+                    {isPublishing ? (
+                      <>
+                        <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Publish image to social networks
+                        <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </>
+                    )}
+                  </span>
+                  <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
+                </button>
               </div>
             </div>
           </div>
