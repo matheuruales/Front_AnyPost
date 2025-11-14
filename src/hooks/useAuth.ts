@@ -89,7 +89,8 @@ export const useAuth = (): AuthContextType => {
       }
 
       try {
-        const token = await currentUser.getIdToken();
+        // Force token refresh to get a fresh token
+        const token = await currentUser.getIdToken(true);
         localStorage.setItem('token', token);
 
         const profileEmail =
@@ -112,6 +113,41 @@ export const useAuth = (): AuthContextType => {
     };
 
     ensureBackendProfile();
+  }, [currentUser]);
+
+  // Set up token refresh listener
+  useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    // Firebase automatically refreshes tokens, but we need to update localStorage
+    const refreshToken = async () => {
+      try {
+        const token = await currentUser.getIdToken(true);
+        localStorage.setItem('token', token);
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+      }
+    };
+
+    // Refresh token every 50 minutes (tokens expire after 1 hour)
+    const tokenRefreshInterval = setInterval(refreshToken, 50 * 60 * 1000);
+
+    // Also listen to token refresh events from Firebase
+    const unsubscribe = auth.onIdTokenChanged(async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        localStorage.setItem('token', token);
+      } else {
+        localStorage.removeItem('token');
+      }
+    });
+
+    return () => {
+      clearInterval(tokenRefreshInterval);
+      unsubscribe();
+    };
   }, [currentUser]);
 
   const register = async (email: string, password: string) => {
