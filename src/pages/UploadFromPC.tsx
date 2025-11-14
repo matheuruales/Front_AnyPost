@@ -153,6 +153,8 @@ const UploadFromPC: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionCharCount, setDescriptionCharCount] = useState(0);
+  const MAX_DESCRIPTION_LENGTH = 500;
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileType, setFileType] = useState<FileType>('video');
@@ -222,6 +224,7 @@ const UploadFromPC: React.FC = () => {
       setSuccessMessage(response);
       setTitle('');
       setDescription('');
+      setDescriptionCharCount(0);
       setFile(null);
       setFilePreview(null);
       setSelectedTargets(['youtube']);
@@ -424,12 +427,30 @@ const UploadFromPC: React.FC = () => {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                          Description
-                        </label>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 block">
+                            Description
+                          </label>
+                          <span className={`text-xs font-medium ${
+                            descriptionCharCount > MAX_DESCRIPTION_LENGTH 
+                              ? 'text-red-400' 
+                              : descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9 
+                              ? 'text-yellow-400' 
+                              : 'text-gray-500'
+                          }`}>
+                            {descriptionCharCount} / {MAX_DESCRIPTION_LENGTH}
+                          </span>
+                        </div>
                         <textarea
                           value={description}
-                          onChange={(event) => setDescription(event.target.value)}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            if (value.length <= MAX_DESCRIPTION_LENGTH) {
+                              setDescription(value);
+                              setDescriptionCharCount(value.length);
+                            }
+                          }}
+                          maxLength={MAX_DESCRIPTION_LENGTH}
                           className="h-32 w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl resize-none"
                           placeholder="Write the main copy or additional notes..."
                         />
@@ -554,9 +575,11 @@ const UploadFromPC: React.FC = () => {
                       <span className="text-xl flex-shrink-0">
                         {successMessage ? '✅' : errorMessage ? '❌' : '⚡'}
                       </span>
-                      <p className="font-medium leading-relaxed">
+                      <p className="font-medium leading-relaxed break-words">
                         {successMessage
-                          ? successMessage
+                          ? (successMessage.startsWith('http://') || successMessage.startsWith('https://'))
+                            ? '✅ Video uploaded successfully! Redirecting to dashboard...'
+                            : successMessage
                           : errorMessage
                           ? errorMessage
                           : 'Ready to submit. Review the information and press PUBLISH.'}
