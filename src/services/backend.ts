@@ -1,4 +1,4 @@
-import api from './api';
+import api, { API_BASE_URL } from './api';
 import {
   AssetRequest,
   AssetResponse,
@@ -80,6 +80,10 @@ export const backendApi = {
     if (params.authUserId) cleanParams.authUserId = params.authUserId;
     if (params.profileId !== undefined && params.profileId !== null) cleanParams.profileId = params.profileId;
     if (params.email) cleanParams.email = params.email;
+    
+    console.log('[backendApi.getUserPosts] Request params:', cleanParams);
+    console.log('[backendApi.getUserPosts] Full URL will be:', `${API_BASE_URL}/user-posts?${new URLSearchParams(cleanParams as Record<string, string>).toString()}`);
+    
     return withJsonData<UserPost[]>(api.get('/user-posts', { params: cleanParams }));
   },
   createUserPost: (authUserId: string, payload: UserPostRequest) =>
@@ -147,4 +151,12 @@ export const backendApi = {
         responseType: 'blob',
       })
       .then((response) => response.data),
+
+  // Video streaming - returns the streaming URL for a blob URL
+  getVideoStreamUrl: (blobUrl: string): string => {
+    if (!blobUrl) return '';
+    // Encode the blob URL as a query parameter
+    const encodedUrl = encodeURIComponent(blobUrl);
+    return `${API_BASE_URL}/videos/stream?url=${encodedUrl}`;
+  },
 };
