@@ -23,7 +23,7 @@ const actionCards = [
         </div>
       </div>
     ),
-    navigateTo: '/dashboard',
+    navigateTo: '/upload-from-pc',
     cta: 'Añadir desde escritorio',
     gradient: 'from-gray-900/50 via-gray-800/40 to-gray-900/50',
     accentColor: 'from-purple-600 via-pink-600 to-orange-600',
@@ -144,6 +144,21 @@ const CreatorHub: React.FC = () => {
               Selecciona una opción para comenzar tu próxima{' '}
               <span className="text-white font-medium">creación</span>
             </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex justify-center mb-12">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="group relative overflow-hidden rounded-xl bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                View Video History
+              </span>
+            </button>
           </div>
 
           {/* Enhanced Cards Grid */}

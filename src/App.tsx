@@ -10,6 +10,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const CreatorHub = React.lazy(() => import('./pages/CreatorHub'));
 const AIDashboard = React.lazy(() => import('./pages/AIDashboard'));
+const UploadFromPC = React.lazy(() => import('./pages/UploadFromPC'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -65,6 +66,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/upload-from-pc"
+            element={
+              <ProtectedRoute>
+                <UploadFromPC />
               </ProtectedRoute>
             }
           />
