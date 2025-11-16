@@ -56,6 +56,31 @@ export interface UserProfileResponse extends UserProfileRequest {
   updatedAt?: string | null;
 }
 
+export interface AuthUser {
+  id: number;
+  email: string;
+  displayName: string;
+  authUserId: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface AuthResponse {
+  token: string | null;
+  user: AuthUser;
+}
+
+export interface AuthLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthRegisterRequest {
+  email: string;
+  displayName: string;
+  password: string;
+}
+
 export interface VideoJobStatus {
   jobId: number;
   status: string;

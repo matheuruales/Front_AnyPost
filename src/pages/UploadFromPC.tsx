@@ -218,7 +218,7 @@ const UploadFromPC: React.FC = () => {
         file,
         title: title.trim(),
         description: description.trim(),
-        authUserId: currentUser!.uid,
+        authUserId: currentUser!.authUserId,
         targets: targetsPreview,
       });
       setSuccessMessage(response);

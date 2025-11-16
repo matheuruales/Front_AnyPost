@@ -2,6 +2,9 @@ import api, { API_BASE_URL } from './api';
 import {
   AssetRequest,
   AssetResponse,
+  AuthLoginRequest,
+  AuthRegisterRequest,
+  AuthResponse,
   PostDraftRequest,
   PostDraftResponse,
   PublicationJobRequest,
@@ -56,6 +59,12 @@ export const backendApi = {
   getAssets: () => withJsonData<AssetResponse[]>(api.get('/assets')),
   createAsset: (payload: AssetRequest) => withJsonData<AssetResponse>(api.post('/assets', payload)),
   deleteAsset: (id: number) => api.delete(`/assets/${id}`),
+
+  auth: {
+    login: (payload: AuthLoginRequest) => withJsonData<AuthResponse>(api.post('/auth/login', payload)),
+    register: (payload: AuthRegisterRequest) => withJsonData<AuthResponse>(api.post('/auth/register', payload)),
+    me: () => withJsonData<AuthResponse>(api.get('/auth/me')),
+  },
 
   // Publication jobs
   getPublicationJobs: () => withJsonData<PublicationJobResponse[]>(api.get('/publication-jobs')),
