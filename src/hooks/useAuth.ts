@@ -1,221 +1,123 @@
-import { useState, useEffect } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  sendPasswordResetEmail,
-  signOut,
-  User,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { FirebaseError } from 'firebase/app';
-import { isAxiosError } from 'axios';
-import { auth } from '../services/firebase';
+import { useState, useEffect, useCallback } from 'react';
 import { backendApi } from '../services/backend';
+import { AuthResponse, AuthUser } from '../types/backend';
 
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: AuthUser | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   loading: boolean;
 }
 
+const TOKEN_KEY = 'token';
+const USER_KEY = 'currentUser';
+
 const sanitizeEmail = (value: string) => value.trim().toLowerCase();
 const sanitizePassword = (value: string) => value.trim();
 
-const getAuthErrorMessage = (error: unknown): string => {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
-      case 'auth/invalid-credential':
-      case 'auth/wrong-password':
-      case 'auth/user-not-found':
-        return 'Invalid email or password. Please try again or reset your password.';
-      case 'auth/too-many-requests':
-        return 'Too many attempts. Please wait a moment and try again.';
-      case 'auth/email-already-in-use':
-        return 'This email is already registered. Try signing in instead.';
-      case 'auth/weak-password':
-        return 'Password must contain at least 6 characters.';
-      case 'auth/network-request-failed':
-        return 'Network error. Check your connection and try again.';
-      default:
-        return 'Authentication failed. Please try again.';
-    }
+const persistSession = (response: AuthResponse, setUser: (user: AuthUser | null) => void) => {
+  if (!response.token) {
+    throw new Error('El backend no devolvió un token válido.');
   }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'An unexpected authentication error occurred. Please try again.';
-};
-
-const getBackendErrorMessage = (error: unknown): string => {
-  if (isAxiosError(error)) {
-    const responseMessage =
-      (typeof error.response?.data === 'string' && error.response.data) ||
-      (typeof error.response?.data === 'object' && error.response?.data?.message);
-    return (
-      responseMessage ||
-      'Unable to register the user in the backend service. Please confirm the API is running.'
-    );
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Unable to register the user in the backend service. Please confirm the API is running.';
+  localStorage.setItem(TOKEN_KEY, response.token);
+  localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+  setUser(response.user);
 };
 
 export const useAuth = (): AuthContextType => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setLoading(false);
-    });
-
-    return unsubscribe;
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setCurrentUser(null);
   }, []);
 
   useEffect(() => {
-    const ensureBackendProfile = async () => {
-      if (!currentUser) {
+    const initializeSession = async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedUser = localStorage.getItem(USER_KEY);
+
+      if (!storedToken || !storedUser) {
+        clearSession();
+        setLoading(false);
         return;
       }
 
       try {
-        // Force token refresh to get a fresh token
-        const token = await currentUser.getIdToken(true);
-        localStorage.setItem('token', token);
-
-        const profileEmail =
-          currentUser.email ||
-          currentUser.providerData.find((provider) => provider.email)?.email;
-
-        if (!profileEmail) {
-          console.warn('Unable to sync profile: no email found for the current user.');
-          return;
+        const response = await backendApi.auth.me();
+        if (response.user) {
+          setCurrentUser(response.user);
+        } else {
+          clearSession();
         }
-
-        await backendApi.createUserProfile({
-          email: profileEmail,
-          displayName: profileEmail.split('@')[0] || 'Creator',
-          authUserId: currentUser.uid,
-        });
       } catch (error) {
-        console.error('Error ensuring backend profile:', error);
+        console.error('Error validating session:', error);
+        clearSession();
+      } finally {
+        setLoading(false);
       }
     };
 
-    ensureBackendProfile();
-  }, [currentUser]);
+    initializeSession();
+  }, [clearSession]);
 
-  // Set up token refresh listener
   useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-
-    // Firebase automatically refreshes tokens, but we need to update localStorage
-    const refreshToken = async () => {
-      try {
-        const token = await currentUser.getIdToken(true);
-        localStorage.setItem('token', token);
-      } catch (error) {
-        console.error('Error refreshing token:', error);
+    const ensureTokenExists = () => {
+      const hasToken = Boolean(localStorage.getItem(TOKEN_KEY));
+      if (!hasToken && currentUser) {
+        clearSession();
       }
     };
 
-    // Refresh token every 50 minutes (tokens expire after 1 hour)
-    const tokenRefreshInterval = setInterval(refreshToken, 50 * 60 * 1000);
-
-    // Also listen to token refresh events from Firebase
-    const unsubscribe = auth.onIdTokenChanged(async (user) => {
-      if (user) {
-        const token = await user.getIdToken();
-        localStorage.setItem('token', token);
-      } else {
-        localStorage.removeItem('token');
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === TOKEN_KEY && event.newValue === null) {
+        ensureTokenExists();
       }
-    });
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', ensureTokenExists);
+    document.addEventListener('visibilitychange', ensureTokenExists);
 
     return () => {
-      clearInterval(tokenRefreshInterval);
-      unsubscribe();
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', ensureTokenExists);
+      document.removeEventListener('visibilitychange', ensureTokenExists);
     };
-  }, [currentUser]);
+  }, [currentUser, clearSession]);
 
-  const register = async (email: string, password: string) => {
-    try {
-      const sanitizedEmail = sanitizeEmail(email);
-      const sanitizedPassword = sanitizePassword(password);
-      const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
-      const token = await userCredential.user.getIdToken();
-      
-      // Store token in localStorage
-      localStorage.setItem('token', token);
-      
-      // Register the collaborator profile in the Spring backend
-      const profileEmail = userCredential.user.email || sanitizedEmail;
-      await backendApi.createUserProfile({
-        email: profileEmail,
-        displayName: profileEmail.split('@')[0] || 'Creator',
-        authUserId: userCredential.user.uid,
-      });
-    } catch (error) {
-      console.error('Error registering:', error);
-      if (isAxiosError(error)) {
-        throw new Error(getBackendErrorMessage(error));
-      }
-      throw new Error(getAuthErrorMessage(error));
-    }
+  const register = async (email: string, password: string, displayName: string) => {
+    const payload = {
+      email: sanitizeEmail(email),
+      password: sanitizePassword(password),
+      displayName: displayName.trim() || 'Creator',
+    };
+
+    const response = await backendApi.auth.register(payload);
+    persistSession(response, setCurrentUser);
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      const sanitizedEmail = sanitizeEmail(email);
-      const sanitizedPassword = sanitizePassword(password);
-      const userCredential = await signInWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
-      const token = await userCredential.user.getIdToken();
-      localStorage.setItem('token', token);
-      const profileEmail = userCredential.user.email || sanitizedEmail;
-      await backendApi.createUserProfile({
-        email: profileEmail,
-        displayName: profileEmail.split('@')[0] || 'Creator',
-        authUserId: userCredential.user.uid,
-      });
-    } catch (error) {
-      console.error('Error logging in:', error);
-      if (isAxiosError(error)) {
-        throw new Error(getBackendErrorMessage(error));
-      }
-      throw new Error(getAuthErrorMessage(error));
-    }
+    const payload = {
+      email: sanitizeEmail(email),
+      password: sanitizePassword(password),
+    };
+
+    const response = await backendApi.auth.login(payload);
+    persistSession(response, setCurrentUser);
   };
 
-  const logout = async () => {
-    try {
-      await signOut(auth);
-      localStorage.removeItem('token');
-    } catch (error) {
-      console.error('Error logging out:', error);
-      throw new Error('Failed to log out. Please try again.');
-    }
-  };
+  const logout = useCallback(async () => {
+    clearSession();
+    window.location.href = '/login';
+  }, [clearSession]);
 
-  const resetPassword = async (email: string) => {
-    try {
-      const sanitizedEmail = sanitizeEmail(email);
-      await sendPasswordResetEmail(auth, sanitizedEmail);
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      throw new Error(getAuthErrorMessage(error));
-    }
+  const resetPassword = async (_email: string) => {
+    throw new Error('Password reset is not available yet. Please contact support.');
   };
 
   return {
@@ -224,6 +126,6 @@ export const useAuth = (): AuthContextType => {
     register,
     logout,
     resetPassword,
-    loading
+    loading,
   };
 };
