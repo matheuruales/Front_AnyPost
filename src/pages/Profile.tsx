@@ -63,12 +63,12 @@ const PostHistory: React.FC = () => {
     setIsFetching(true);
     try {
       console.log('Fetching posts for user:', {
-        authUserId: currentUser.uid,
+        authUserId: currentUser.authUserId,
         email: currentUser.email
       });
 
       const userPosts = await backendApi.getUserPosts({
-        authUserId: currentUser.uid,
+        authUserId: currentUser.authUserId,
         email: currentUser.email ?? undefined,
       });
 

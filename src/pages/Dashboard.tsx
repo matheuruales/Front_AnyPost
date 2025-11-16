@@ -48,12 +48,12 @@ const Dashboard: React.FC = () => {
 
     try {
       console.log('Fetching user posts for:', {
-        authUserId: currentUser.uid,
+        authUserId: currentUser.authUserId,
         email: currentUser.email
       });
 
       const userPosts = await backendApi.getUserPosts({
-        authUserId: currentUser.uid,
+        authUserId: currentUser.authUserId,
         email: currentUser.email ?? undefined,
       });
 
