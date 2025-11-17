@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Input from '../components/ui/Input';
+import Layout from '../components/Layout';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -28,7 +29,8 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <Layout>
+      <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Fondo */}
       <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900"></div>
 
@@ -294,7 +296,7 @@ const Login: React.FC = () => {
           </p>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
