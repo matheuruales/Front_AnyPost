@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
 import Layout from '../components/Layout';
 
 const Register: React.FC = () => {
@@ -10,6 +9,12 @@ const Register: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    displayName?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -18,17 +23,59 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
 
     setIsLoading(true);
     setError('');
+    const validationErrors: typeof fieldErrors = {};
+
+    const trimmedEmail = email.trim();
+    const trimmedDisplayName = displayName.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const [localPart = '', domainPart = ''] = trimmedEmail.split('@');
+
+    if (!emailRegex.test(trimmedEmail)) {
+      validationErrors.email = 'Ingresa un correo válido';
+    } else if (trimmedEmail.length > 254 || localPart.length > 64 || domainPart.length > 190) {
+      validationErrors.email = 'El correo es demasiado largo';
+    }
+
+    if (trimmedDisplayName.length < 3) {
+      validationErrors.displayName = 'El nombre debe tener al menos 3 caracteres';
+    } else if (trimmedDisplayName.length > 40) {
+      validationErrors.displayName = 'El nombre no puede tener más de 40 caracteres';
+    } else if (/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .'-]/.test(trimmedDisplayName)) {
+      validationErrors.displayName = 'Usa solo letras, números y espacios';
+    }
+
+    const passwordRules = [
+      { valid: password.length >= 8, message: 'La contraseña debe tener al menos 8 caracteres' },
+      { valid: password.length <= 64, message: 'La contraseña es demasiado larga' },
+      { valid: /[A-Z]/.test(password), message: 'Incluye al menos una mayúscula' },
+      { valid: /[a-z]/.test(password), message: 'Incluye al menos una minúscula' },
+      { valid: /[0-9]/.test(password), message: 'Incluye al menos un número' },
+      { valid: /[^A-Za-z0-9]/.test(password), message: 'Incluye al menos un símbolo' },
+    ];
+
+    const failedRule = passwordRules.find((rule) => !rule.valid);
+    if (failedRule) {
+      validationErrors.password = failedRule.message;
+    }
+
+    if (password !== confirmPassword) {
+      validationErrors.confirmPassword = 'Las contraseñas no coinciden';
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setIsLoading(false);
+      setError('Por favor corrige los campos marcados');
+      return;
+    }
+
+    setFieldErrors({});
 
     try {
-      await register(email, password, displayName);
+      await register(trimmedEmail, password, trimmedDisplayName);
       navigate('/dashboard');
     } catch (error: any) {
       setError(error.message || 'Error al crear tu cuenta');
@@ -120,15 +167,17 @@ const Register: React.FC = () => {
                 {/* Inputs */}
                 <div className="space-y-4">
                   <Input
-                    label="Correo electr�nico"
+                    label="Correo electrónico"
                     id="email"
                     name="email"
                     type="email"
                     autoComplete="email"
                     required
+                    maxLength={254}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Ingresa tu correo"
+                    error={fieldErrors.email}
                     icon={
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -141,9 +190,11 @@ const Register: React.FC = () => {
                     name="displayName"
                     type="text"
                     required
+                    maxLength={40}
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="�C�mo quieres que te llamemos?"
+                    placeholder="¿Cómo quieres que te llamemos?"
+                    error={fieldErrors.displayName}
                     icon={
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -151,15 +202,17 @@ const Register: React.FC = () => {
                     }
                   />
                   <Input
-                    label="Contrase�a"
+                    label="Contraseña"
                     id="password"
                     name="password"
                     type="password"
                     autoComplete="new-password"
                     required
+                    maxLength={64}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Crea una contrase�a"
+                    placeholder="Crea una contraseña"
+                    error={fieldErrors.password}
                     icon={
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -167,15 +220,17 @@ const Register: React.FC = () => {
                     }
                   />
                   <Input
-                    label="Confirmar contrase�a"
+                    label="Confirmar contraseña"
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
                     autoComplete="new-password"
                     required
+                    maxLength={64}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirma tu contrase�a"
+                    placeholder="Confirma tu contraseña"
+                    error={fieldErrors.confirmPassword}
                     icon={
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
