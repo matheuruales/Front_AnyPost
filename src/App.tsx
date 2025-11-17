@@ -65,7 +65,7 @@ const App: React.FC = () => {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Historial />
+                <Dashboard />
               </ProtectedRoute>
             }
           />
