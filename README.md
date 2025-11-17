@@ -22,5 +22,5 @@ npm install
 
 
 ## Estructura del proyecto
-(árbol resumido y propósito de cada carpeta)
+(árbol resumido y propósito de cada carpetas)
 
