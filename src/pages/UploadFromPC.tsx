@@ -151,6 +151,9 @@ const UploadFromPC: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const videoAllowedTargets: TargetValue[] = ['youtube', 'instagram', 'linkedin', 'facebook'];
+  const imageAllowedTargets: TargetValue[] = TARGET_OPTIONS.map((o) => o.value);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [descriptionCharCount, setDescriptionCharCount] = useState(0);
@@ -167,6 +170,10 @@ const UploadFromPC: React.FC = () => {
   const targetsPreview = useMemo(() => selectedTargets.join(', '), [selectedTargets]);
 
   const toggleTarget = (value: TargetValue) => {
+    const allowed = new Set(fileType === 'video' ? videoAllowedTargets : imageAllowedTargets);
+    if (!allowed.has(value)) {
+      return;
+    }
     setSelectedTargets((prev) =>
       prev.includes(value) ? prev.filter((target) => target !== value) : [...prev, value]
     );
@@ -191,6 +198,8 @@ const UploadFromPC: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    const allowed = type === 'video' ? videoAllowedTargets : imageAllowedTargets;
+    setSelectedTargets([allowed[0]]);
   };
 
   const getFileAcceptString = () => {
@@ -218,8 +227,13 @@ const UploadFromPC: React.FC = () => {
       return;
     }
 
-    if (!file.type.startsWith('video/')) {
+    if (fileType === 'video' && !file.type.startsWith('video/')) {
       setErrorMessage('Only video files are supported for this upload.');
+      return;
+    }
+
+    if (fileType === 'image' && !file.type.startsWith('image/')) {
+      setErrorMessage('Only image files are supported for this upload.');
       return;
     }
 
@@ -400,7 +414,10 @@ const UploadFromPC: React.FC = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {TARGET_OPTIONS.map((option) => (
+                      {(fileType === 'video'
+                        ? TARGET_OPTIONS.filter((option) => videoAllowedTargets.includes(option.value))
+                        : TARGET_OPTIONS
+                      ).map((option) => (
                         <TargetSwitch
                           key={option.value}
                           option={option}
