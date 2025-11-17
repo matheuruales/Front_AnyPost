@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { useAuth } from '../hooks/useAuth';
 
 const actionCards = [
   {
@@ -55,7 +54,6 @@ const actionCards = [
 
 const CreatorHub: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
 
   return (
     <Layout>
@@ -72,155 +70,155 @@ const CreatorHub: React.FC = () => {
 
         {/* Content wrapper */}
         <div className="relative z-10">
-          {/* Main Content */}
           <div className="mx-auto max-w-7xl px-6 py-16">
-          {/* Enhanced Header */}
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 mb-6 border border-white/10 backdrop-blur-xl">
-              <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"></span>
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
-                Centro de creación
-              </span>
+            {/* Enhanced Header */}
+            <div className="text-center mb-20">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 mb-6 border border-white/10 backdrop-blur-xl">
+                <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"></span>
+                <span className="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
+                  Centro de creación
+                </span>
+              </div>
+              
+              <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+                <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
+                  ¿Qué quieres hacer
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                  hoy?
+                </span>
+              </h1>
+              
+              <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
+                Selecciona una opción para comenzar tu próxima{' '}
+                <span className="text-white font-medium">creación</span>
+              </p>
             </div>
-            
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-                ¿Qué quieres hacer
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                hoy?
-              </span>
-            </h1>
-            
-            <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
-              Selecciona una opción para comenzar tu próxima{' '}
-              <span className="text-white font-medium">creación</span>
-            </p>
-          </div>
 
-          {/* Quick Actions */}
-          <div className="flex justify-center mb-12">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="group relative overflow-hidden rounded-xl bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                View Video History
-              </span>
-            </button>
-          </div>
-
-          {/* Enhanced Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
-            {actionCards.map((card, index) => (
+            {/* Quick Actions */}
+            <div className="flex justify-center mb-12">
               <button
-                key={card.id}
-                onClick={() => navigate(card.navigateTo)}
-                className={`group relative w-full h-[600px] flex flex-col rounded-3xl bg-gradient-to-br ${card.gradient} p-8 text-left transition-all duration-700 hover:scale-[1.03] border border-white/10 backdrop-blur-xl ${card.glow} hover:${card.hoverGlow}`}
-                style={{ animationDelay: `${index * 100}ms` }}
+                onClick={() => navigate('/dashboard')}
+                className="group relative overflow-hidden rounded-xl bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20"
               >
-                {/* Animated gradient border on hover */}
-                <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${card.accentColor} opacity-20 blur-xl`}></div>
-                </div>
-
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 rounded-3xl overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                </div>
-                
-                <div className="relative z-10 flex flex-col h-full">
-                  {/* Enhanced Header */}
-                  <div className="flex items-center justify-between mb-8">
-                    <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/40 group-hover:text-white/60 transition-colors">
-                      {card.label}
-                    </span>
-                    <span className="rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white/50 transition-all group-hover:bg-white/20 group-hover:text-white/80 border border-white/20 group-hover:scale-110">
-                      Paso 1
-                    </span>
-                  </div>
-
-                  {/* Main Content - Perfectly Centered */}
-                  <div className="flex-1 flex flex-col justify-center space-y-6">
-                    {/* Icon */}
-                    <div className="flex justify-center transform group-hover:scale-110 transition-transform duration-500">
-                      {card.icon}
-                    </div>
-                    
-                    {/* Title */}
-                    <h2 className="text-2xl font-bold leading-tight text-white text-center px-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-white group-hover:to-gray-300 transition-all duration-300">
-                      {card.title}
-                    </h2>
-
-                    {/* Description */}
-                    <p className="text-sm leading-relaxed text-white/50 group-hover:text-white/70 text-center px-2 transition-colors duration-300">
-                      {card.description}
-                    </p>
-
-                    {/* Enhanced Summary Box */}
-                    <div className="relative rounded-2xl bg-black/40 p-5 border border-white/10 group-hover:border-white/20 backdrop-blur-xl transition-all duration-300 group-hover:bg-black/60">
-                      <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${card.accentColor} opacity-0 group-hover:opacity-5 blur-xl transition-opacity duration-300`}></div>
-                      
-                      <p className="relative text-xs font-bold uppercase tracking-[0.3em] text-white/30 group-hover:text-white/50 text-center mb-2 transition-colors">
-                        Resumen
-                      </p>
-                      <p className="relative text-sm text-white/40 group-hover:text-white/60 leading-relaxed text-center transition-colors">
-                        {card.id === 'upload'
-                          ? 'Ideal para subir assets existentes y gestionar su distribución.'
-                          : 'Explora la futura experiencia creativa impulsada por IA.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Enhanced Footer */}
-                  <div className="mt-8 flex items-center justify-between pt-5 border-t border-white/10 group-hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs uppercase tracking-[0.3em] text-white/20 group-hover:text-white/40 transition-colors">
-                        Continuar
-                      </span>
-                      <svg 
-                        className="w-4 h-4 text-white/20 group-hover:text-white/40 group-hover:translate-x-1 transition-all" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                    
-                    <span className={`relative overflow-hidden rounded-xl bg-gradient-to-r ${card.accentColor} px-6 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg shadow-black/50`}>
-                      <span className="relative z-10">{card.cta}</span>
-                      <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
-                    </span>
-                  </div>
-                </div>
+                <span className="relative z-10 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  View Video History
+                </span>
               </button>
-            ))}
-          </div>
-
-          {/* Enhanced Footer */}
-          <div className="text-center space-y-6">
-            {/* Quick Stats */}
-            <div className="flex items-center justify-center gap-8 mb-8">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                <span className="text-xs text-gray-500">Sistema operativo</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                <span className="text-xs text-gray-500">2 flujos disponibles</span>
-              </div>
             </div>
 
-            <div className="h-px w-32 mx-auto bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-            
-            <p className="text-xs text-white/20 font-medium">
-              Anypost © 2024 · Tu plataforma de creación de contenido
-            </p>
+            {/* Enhanced Cards Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
+              {actionCards.map((card, index) => (
+                <button
+                  key={card.id}
+                  onClick={() => navigate(card.navigateTo)}
+                  className={`group relative w-full h-[600px] flex flex-col rounded-3xl bg-gradient-to-br ${card.gradient} p-8 text-left transition-all duration-700 hover:scale-[1.03] border border-white/10 backdrop-blur-xl ${card.glow} hover:${card.hoverGlow}`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Animated gradient border on hover */}
+                  <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${card.accentColor} opacity-20 blur-xl`}></div>
+                  </div>
+
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 rounded-3xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                  </div>
+                  
+                  <div className="relative z-10 flex flex-col h-full">
+                    {/* Enhanced Header */}
+                    <div className="flex items-center justify-between mb-8">
+                      <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/40 group-hover:text-white/60 transition-colors">
+                        {card.label}
+                      </span>
+                      <span className="rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white/50 transition-all group-hover:bg-white/20 group-hover:text-white/80 border border-white/20 group-hover:scale-110">
+                        Paso 1
+                      </span>
+                    </div>
+
+                    {/* Main Content - Perfectly Centered */}
+                    <div className="flex-1 flex flex-col justify-center space-y-6">
+                      {/* Icon */}
+                      <div className="flex justify-center transform group-hover:scale-110 transition-transform duration-500">
+                        {card.icon}
+                      </div>
+                      
+                      {/* Title */}
+                      <h2 className="text-2xl font-bold leading-tight text-white text-center px-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-white group-hover:to-gray-300 transition-all duration-300">
+                        {card.title}
+                      </h2>
+
+                      {/* Description */}
+                      <p className="text-sm leading-relaxed text-white/50 group-hover:text-white/70 text-center px-2 transition-colors duration-300">
+                        {card.description}
+                      </p>
+
+                      {/* Enhanced Summary Box */}
+                      <div className="relative rounded-2xl bg-black/40 p-5 border border-white/10 group-hover:border-white/20 backdrop-blur-xl transition-all duration-300 group-hover:bg-black/60">
+                        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${card.accentColor} opacity-0 group-hover:opacity-5 blur-xl transition-opacity duration-300`}></div>
+                        
+                        <p className="relative text-xs font-bold uppercase tracking-[0.3em] text-white/30 group-hover:text-white/50 text-center mb-2 transition-colors">
+                          Resumen
+                        </p>
+                        <p className="relative text-sm text-white/40 group-hover:text-white/60 leading-relaxed text-center transition-colors">
+                          {card.id === 'upload'
+                            ? 'Ideal para subir assets existentes y gestionar su distribución.'
+                            : 'Explora la futura experiencia creativa impulsada por IA.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Enhanced Footer */}
+                    <div className="mt-8 flex items-center justify-between pt-5 border-t border-white/10 group-hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs uppercase tracking-[0.3em] text-white/20 group-hover:text-white/40 transition-colors">
+                          Continuar
+                        </span>
+                        <svg 
+                          className="w-4 h-4 text-white/20 group-hover:text-white/40 group-hover:translate-x-1 transition-all" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                      
+                      <span className={`relative overflow-hidden rounded-xl bg-gradient-to-r ${card.accentColor} px-6 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg shadow-black/50`}>
+                        <span className="relative z-10">{card.cta}</span>
+                        <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Enhanced Footer */}
+            <div className="text-center space-y-6">
+              {/* Quick Stats */}
+              <div className="flex items-center justify-center gap-8 mb-8">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span className="text-xs text-gray-500">Sistema operativo</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                  <span className="text-xs text-gray-500">2 flujos disponibles</span>
+                </div>
+              </div>
+
+              <div className="h-px w-32 mx-auto bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+              
+              <p className="text-xs text-white/20 font-medium">
+                Anypost © 2024 · Tu plataforma de creación de contenido
+              </p>
+            </div>
           </div>
         </div>
       </div>
