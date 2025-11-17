@@ -212,14 +212,27 @@ const UploadFromPC: React.FC = () => {
       return;
     }
 
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setErrorMessage('Please add a title for your publication.');
+      return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+      setErrorMessage('Only video files are supported for this upload.');
+      return;
+    }
+
+    const normalizedTargets = selectedTargets.join(',');
+
     setIsSubmitting(true);
     try {
       const response = await backendApi.uploadVideoAsset({
         file,
-        title: title.trim(),
+        title: trimmedTitle,
         description: description.trim(),
         authUserId: currentUser!.authUserId,
-        targets: targetsPreview,
+        targets: normalizedTargets,
       });
       setSuccessMessage(response);
       setTitle('');
@@ -597,4 +610,3 @@ const UploadFromPC: React.FC = () => {
 };
 
 export default UploadFromPC;
-

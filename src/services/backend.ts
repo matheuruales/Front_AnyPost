@@ -108,11 +108,7 @@ export const backendApi = {
     formData.append('authUserId', authUserId);
     formData.append('targets', targets);
 
-    return withJsonData<string>(
-      api.post('/videos/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-    );
+    return withJsonData<string>(api.post('/videos/upload', formData));
   },
 
   generateVideoAsync: async ({
