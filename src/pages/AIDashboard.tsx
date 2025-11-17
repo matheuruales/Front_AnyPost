@@ -6,6 +6,7 @@ import { backendApi } from '../services/backend';
 import { ImageGenerationResponse } from '../types/backend';
 import { PromptHistoryStack, PromptEntry } from '../data-structures/PromptHistoryStack';
 import Loader from '../components/ui/Loader';
+import Layout from '../components/Layout';
 
 const sizeOptions = [
   { value: '1024x1024', label: '1024 x 1024 (Square)' },
@@ -100,7 +101,7 @@ type TargetValue = (typeof TARGET_OPTIONS)[number]['value'];
 
 const AIDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { logout, currentUser } = useAuth();
+  const { currentUser } = useAuth();
   
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState(sizeOptions[0].value);
@@ -332,19 +333,11 @@ const AIDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
-
   const allPrompts = promptHistory.getAll();
 
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-hidden">
+    <Layout>
+      <div className="relative min-h-screen bg-black text-white overflow-hidden">
       <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900"></div>
       
       <div className="fixed inset-0 opacity-30">
@@ -799,8 +792,9 @@ const AIDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
