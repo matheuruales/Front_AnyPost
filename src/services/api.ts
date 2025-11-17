@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 const { VITE_API_BASE_URL } = import.meta.env;
 
@@ -10,20 +10,31 @@ export const API_BASE_URL = VITE_API_BASE_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Add a request interceptor to include the auth token
 api.interceptors.request.use(
   (config) => {
+    const headers =
+      config.headers instanceof AxiosHeaders
+        ? config.headers
+        : new AxiosHeaders(config.headers || {});
+
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      headers.set('Authorization', `Bearer ${token}`);
     } else {
       console.warn('[api interceptor] No token available for request:', config.url);
     }
+
+    // Ensure we don't force JSON when posting FormData (uploads)
+    if (config.data instanceof FormData) {
+      headers.delete('Content-Type');
+    } else if (!headers.get('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    config.headers = headers;
     return config;
   },
   (error) => {
