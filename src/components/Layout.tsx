@@ -3,12 +3,13 @@ import Navbar from './Navbar';
 
 interface LayoutProps {
   children: React.ReactNode;
+  hideNavbar?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, hideNavbar = false }) => {
   return (
     <div className="min-h-screen bg-black grid-pattern">
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <main className="fade-in">{children}</main>
       
       {/* Footer */}

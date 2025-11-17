@@ -85,7 +85,7 @@ const Register: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout hideNavbar>
       <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Animated Background */}
         <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900"></div>
