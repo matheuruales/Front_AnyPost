@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { AxiosError } from 'axios';
 import { backendApi } from '../services/backend';
 import { AuthResponse, AuthUser } from '../types/backend';
 
@@ -123,11 +124,24 @@ export const useAuth = (): AuthContextType => {
     if (!sanitizedEmail) {
       throw new Error('Por favor ingresa un correo válido.');
     }
-    await backendApi.auth.forgotPassword(sanitizedEmail);
+    try {
+      await backendApi.auth.forgotPassword(sanitizedEmail);
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      if (error.response?.status === 404) {
+        throw new Error('Usuario no registrado con ese correo.');
+      }
+      throw new Error(error.response?.data?.message || 'No pudimos enviar el código. Intenta de nuevo.');
+    }
   };
 
   const verifyResetCode = async (email: string, code: string) => {
-    await backendApi.auth.verifyResetCode(sanitizeEmail(email), code.trim());
+    try {
+      await backendApi.auth.verifyResetCode(sanitizeEmail(email), code.trim());
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      throw new Error(error.response?.data?.message || 'Código inválido o expirado.');
+    }
   };
 
   const resetPassword = async (email: string, code: string, newPassword: string) => {
@@ -136,7 +150,12 @@ export const useAuth = (): AuthContextType => {
     if (!sanitizedEmail || !sanitizedPassword || !code.trim()) {
       throw new Error('Completa correo, código y contraseña nueva.');
     }
-    await backendApi.auth.resetPassword(sanitizedEmail, code.trim(), sanitizedPassword);
+    try {
+      await backendApi.auth.resetPassword(sanitizedEmail, code.trim(), sanitizedPassword);
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      throw new Error(error.response?.data?.message || 'No pudimos actualizar la contraseña.');
+    }
   };
 
   return {

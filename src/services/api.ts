@@ -23,7 +23,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
-    } else {
+    } else if (!config.url?.includes('/auth/')) {
       console.warn('[api interceptor] No token available for request:', config.url);
     }
 
