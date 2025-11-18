@@ -20,7 +20,7 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/creator-hub');
     } catch (error: any) {
       // Mostrar un mensaje claro cuando las credenciales no sean válidas
       setError('Correo o contraseña incorrectos. Inténtalo de nuevo.');
