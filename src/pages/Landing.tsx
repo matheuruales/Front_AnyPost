@@ -63,17 +63,16 @@ const Landing: React.FC = () => {
             <div className="space-y-6">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur">
                 <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-                Automatiza en segundos
+                Multiredes sin esfuerzo
               </span>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-white">
-                Crea, agenda y comparte contenido con la potencia de{' '}
-                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-300 bg-clip-text text-transparent">
-                  IA generativa
-                </span>
+                Publica en todas tus redes desde un solo lugar.
               </h1>
               <p className="text-lg text-gray-300 max-w-2xl">
-                AnyPost te ayuda a crear publicaciones, videos y copies en minutos. Centraliza tu
-                flujo creativo, colabora con tu equipo y publica donde quieras sin salir de tu hub.
+                AnyPost es la plataforma que te permite crear, programar y publicar contenido en múltiples redes sociales al mismo tiempo, ahorrándote horas de trabajo y manteniendo tu marca siempre activa.
+              </p>
+              <p className="text-gray-200 max-w-2xl">
+                Con AnyPost solo escribes tu post una vez, subes tu imagen o video y seleccionas tus redes favoritas. Nosotros nos encargamos de enviarlo a cada plataforma con la mejor calidad, para que tú solo te preocupes por crear contenido increíble.
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Link
@@ -105,6 +104,23 @@ const Landing: React.FC = () => {
                   </div>
                   <span>+3K creadores ya usan AnyPost</span>
                 </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3 text-sm text-gray-100">
+                {[
+                  { icon: '⚡', text: 'Ahorra tiempo gestionando todo desde un solo panel.' },
+                  { icon: '📊', text: 'Visualiza el estado de tus publicaciones y su rendimiento.' },
+                  { icon: '☁️', text: 'Tus archivos se guardan de forma segura en la nube.' },
+                ].map((item) => (
+                  <div
+                    key={item.text}
+                    className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur"
+                  >
+                    <span className="text-lg" aria-hidden>
+                      {item.icon}
+                    </span>
+                    <p className="text-gray-200">{item.text}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -154,15 +170,15 @@ const Landing: React.FC = () => {
           <section className="mt-20 grid gap-6 md:grid-cols-3">
             {[
               {
-                title: 'Crea en minutos',
-                desc: 'Brief inteligente, plantillas y IA para copies, videos y creatividades listas para publicar.',
+                title: 'Sube una vez, publica en todas',
+                desc: 'Instagram, TikTok, Facebook, YouTube, X, LinkedIn y más desde un solo flujo.',
                 icon: (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 12h16M4 16h10" />
                 ),
               },
               {
-                title: 'Organiza y programa',
-                desc: 'Calendario unificado, aprobación en equipo y publicación directa a tus canales.',
+                title: 'Programación inteligente',
+                desc: 'Elige horarios, colabora con tu equipo y deja que AnyPost despache cada pieza con la mejor calidad.',
                 icon: (
                   <>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -172,8 +188,8 @@ const Landing: React.FC = () => {
                 ),
               },
               {
-                title: 'Mide y mejora',
-                desc: 'Insights accionables y recomendaciones de IA para iterar tus campañas al instante.',
+                title: 'Control y rendimiento',
+                desc: 'Visualiza estado de publicaciones, KPIs y recomendaciones para que tu marca siga activa.',
                 icon: (
                   <>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4-4 4 4 4-8 4 6" />
@@ -206,12 +222,12 @@ const Landing: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/0 to-white/10 opacity-40" />
               <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div>
-                  <p className="text-sm uppercase tracking-[0.2em] text-white/70">Ready</p>
+                  <p className="text-sm uppercase tracking-[0.2em] text-white/70">Publica sin fricción</p>
                   <h3 className="text-3xl font-bold text-white mt-2">
-                    Lanza tu próximo contenido con AnyPost
+                    AnyPost es tu centro de control multired
                   </h3>
                   <p className="text-gray-200 mt-2 max-w-2xl">
-                    Activa la IA, colabora con tu equipo y publica en un solo flujo. Sin complicaciones.
+                    Sube tu contenido una sola vez, elige redes y deja que nosotros lo llevemos a cada plataforma con la mejor calidad.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
