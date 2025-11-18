@@ -22,7 +22,8 @@ const Login: React.FC = () => {
       await login(email, password);
       navigate('/dashboard');
     } catch (error: any) {
-      setError(error.message || 'Failed to sign in');
+      // Mostrar un mensaje claro cuando las credenciales no sean válidas
+      setError('Correo o contraseña incorrectos. Inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
     }
