@@ -12,6 +12,7 @@ const CreatorHub = React.lazy(() => import('./pages/CreatorHub'));
 const AIDashboard = React.lazy(() => import('./pages/AIDashboard'));
 const UploadFromPC = React.lazy(() => import('./pages/UploadFromPC'));
 const SharePost = React.lazy(() => import('./pages/SharePost'));
+const Landing = React.lazy(() => import('./pages/Landing'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -38,6 +39,7 @@ const App: React.FC = () => {
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <React.Suspense fallback={<Loader />}>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route
             path="/login"
             element={
@@ -110,8 +112,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/creator-hub" />} />
-          <Route path="*" element={<Navigate to="/creator-hub" />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </React.Suspense>
     </Router>
