@@ -97,7 +97,7 @@ const Logo3D: React.FC = () => {
     <Link
       to="/"
       className="flex items-center gap-3"
-      ref={logoRef}
+      ref={logoRef as any}
       style={{
         transform: `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
         transition: 'transform 0.1s ease-out',
@@ -128,13 +128,13 @@ const FeatureCard3D: React.FC<{
   index: number;
 }> = ({ title, desc, icon, index }) => {
   return (
-    <TiltCard3D
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg shadow-purple-500/10"
-      style={{
-        animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 opacity-50" />
+    <TiltCard3D className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg shadow-purple-500/10">
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 opacity-50"
+        style={{
+          animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+        }}
+      />
       <div className="relative space-y-3" style={{ transform: 'translateZ(20px)' }}>
         <div
           className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 flex items-center justify-center text-white"
