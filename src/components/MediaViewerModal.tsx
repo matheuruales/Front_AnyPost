@@ -70,9 +70,11 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
     const mediaUrl = post.videoUrl || post.thumbnail;
     if (!mediaUrl) return;
 
-    // Create a temporary anchor element to trigger download
+    const proxiedUrl = getStreamingUrl(mediaUrl);
+    if (!proxiedUrl) return;
+
     const link = document.createElement('a');
-    link.href = mediaUrl;
+    link.href = proxiedUrl;
     link.download = `${post.title.replace(/[^a-z0-9]/gi, '_')}.${post.videoUrl ? 'mp4' : 'jpg'}`;
     document.body.appendChild(link);
     link.click();
@@ -82,11 +84,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const handleShare = () => {
     if (!post) return;
 
-    const mediaUrl = post.videoUrl || post.thumbnail;
-    if (!mediaUrl) return;
-
-    // Generate shareable link with media URL as parameter
-    const shareUrl = `${window.location.origin}/share/${post.id}?media=${encodeURIComponent(mediaUrl)}`;
+    const shareUrl = `${window.location.origin}/share/${post.id}`;
     setShareLink(shareUrl);
 
     // Copy to clipboard
@@ -215,7 +213,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
                 />
               ) : (
                 <img
-                  src={mediaUrl || undefined}
+                  src={getStreamingUrl(mediaUrl || undefined)}
                   alt={post.title}
                   className="w-full h-full object-contain"
                 />

@@ -11,6 +11,7 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const CreatorHub = React.lazy(() => import('./pages/CreatorHub'));
 const AIDashboard = React.lazy(() => import('./pages/AIDashboard'));
 const UploadFromPC = React.lazy(() => import('./pages/UploadFromPC'));
+const SharePost = React.lazy(() => import('./pages/SharePost'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -98,6 +99,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/share/:postId"
+            element={
+              <ProtectedRoute>
+                <SharePost />
               </ProtectedRoute>
             }
           />

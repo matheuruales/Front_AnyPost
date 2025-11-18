@@ -95,6 +95,7 @@ export const backendApi = {
     
     return withJsonData<UserPost[]>(api.get('/user-posts', { params: cleanParams }));
   },
+  getUserPostById: (postId: string) => withJsonData<UserPost>(api.get(`/user-posts/${postId}`)),
   createUserPost: (authUserId: string, payload: UserPostRequest) =>
     withJsonData<UserPost>(api.post(`/users/${authUserId}/posts`, payload)),
   deleteUserPost: (postId: string) => api.delete(`/posts/${postId}`),
