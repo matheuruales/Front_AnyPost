@@ -67,7 +67,7 @@ const Landing: React.FC = () => {
               )}
               <Link
                 to={primaryCta.to}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] transition-all duration-300 hover:translate-y-[-2px]"
+                className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] transition-all duration-300 hover:translate-y-[-2px]"
               >
                 {primaryCta.label}
                 <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,6 +214,28 @@ const Landing: React.FC = () => {
                       <span className="text-xs text-white/70">75% eficiencia</span>
                     </div>
                   </div>
+
+                  {/* Redes conectadas */}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {[
+                      { name: 'Instagram', short: 'IG', gradient: 'from-pink-500 to-yellow-400' },
+                      { name: 'TikTok', short: 'TT', gradient: 'from-gray-900 to-cyan-400' },
+                      { name: 'Facebook', short: 'FB', gradient: 'from-blue-600 to-cyan-500' },
+                      { name: 'YouTube', short: 'YT', gradient: 'from-red-500 to-orange-500' },
+                      { name: 'X', short: 'X', gradient: 'from-slate-800 to-gray-500' },
+                      { name: 'LinkedIn', short: 'IN', gradient: 'from-blue-500 to-indigo-500' },
+                    ].map((network) => (
+                      <span
+                        key={network.name}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 hover:border-white/30 hover:bg-white/10 transition"
+                      >
+                        <span className={`flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br ${network.gradient} text-[10px] font-semibold text-white shadow-lg`}>
+                          {network.short}
+                        </span>
+                        {network.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -239,7 +261,12 @@ const Landing: React.FC = () => {
                   title: 'Sube una vez, publica en todas',
                   desc: 'Instagram, TikTok, Facebook, YouTube, X, LinkedIn y más desde un solo flujo.',
                   icon: (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 12h16M4 16h10" />
+                    <>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7h14" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 17h8" />
+                      <circle cx="18" cy="12" r="2" strokeWidth={2} />
+                    </>
                   ),
                   gradient: 'from-purple-500 to-pink-500'
                 },
@@ -248,9 +275,9 @@ const Landing: React.FC = () => {
                   desc: 'Elige horarios, colabora con tu equipo y deja que AnyPost despache cada pieza con la mejor calidad.',
                   icon: (
                     <>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-                      <rect x="5" y="7" width="14" height="12" rx="2" ry="2" strokeWidth={2} />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 13h-4v4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6V5a3 3 0 013-3h2a3 3 0 013 3v1" />
+                      <rect x="5" y="6" width="14" height="13" rx="3" ry="3" strokeWidth={2} />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11v4l3 2" />
                     </>
                   ),
                   gradient: 'from-pink-500 to-orange-500'
@@ -260,8 +287,9 @@ const Landing: React.FC = () => {
                   desc: 'Visualiza estado de publicaciones, KPIs y recomendaciones para que tu marca siga activa.',
                   icon: (
                     <>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4-4 4 4 4-8 4 6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l3-4 3 3 4-8 3 6" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16" />
+                      <circle cx="6" cy="7" r="2" strokeWidth={2} />
                     </>
                   ),
                   gradient: 'from-orange-500 to-purple-500'
@@ -274,8 +302,9 @@ const Landing: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   <div className="relative space-y-4">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <div className="absolute inset-0 rounded-2xl bg-white/10 blur-md opacity-0 group-hover:opacity-70 transition-opacity duration-300" />
+                      <svg className="relative w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         {feature.icon}
                       </svg>
                     </div>
@@ -287,7 +316,11 @@ const Landing: React.FC = () => {
                     <p className="text-gray-300 text-lg leading-relaxed">{feature.desc}</p>
                     
                     <div className="pt-4">
-                      <div className="w-8 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:w-12 transition-all duration-300" />
+                      <div className="flex items-center gap-2 text-xs text-white/70">
+                        <span className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse" />
+                        <span>Listo para publicar</span>
+                      </div>
+                      <div className="mt-2 w-10 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:w-14 transition-all duration-300" />
                     </div>
                   </div>
                 </div>
