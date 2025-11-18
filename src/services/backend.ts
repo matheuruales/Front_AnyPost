@@ -64,6 +64,10 @@ export const backendApi = {
     login: (payload: AuthLoginRequest) => withJsonData<AuthResponse>(api.post('/auth/login', payload)),
     register: (payload: AuthRegisterRequest) => withJsonData<AuthResponse>(api.post('/auth/register', payload)),
     me: () => withJsonData<AuthResponse>(api.get('/auth/me')),
+    forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
+    verifyResetCode: (email: string, code: string) => api.post('/auth/verify-reset-code', { email, code }),
+    resetPassword: (email: string, code: string, newPassword: string) =>
+      api.post('/auth/reset-password', { email, code, newPassword }),
   },
 
   // Publication jobs

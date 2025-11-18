@@ -7,7 +7,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  verifyResetCode: (email: string, code: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -116,8 +118,25 @@ export const useAuth = (): AuthContextType => {
     window.location.href = '/login';
   }, [clearSession]);
 
-  const resetPassword = async (_email: string) => {
-    throw new Error('Password reset is not available yet. Please contact support.');
+  const requestPasswordReset = async (email: string) => {
+    const sanitizedEmail = sanitizeEmail(email);
+    if (!sanitizedEmail) {
+      throw new Error('Por favor ingresa un correo válido.');
+    }
+    await backendApi.auth.forgotPassword(sanitizedEmail);
+  };
+
+  const verifyResetCode = async (email: string, code: string) => {
+    await backendApi.auth.verifyResetCode(sanitizeEmail(email), code.trim());
+  };
+
+  const resetPassword = async (email: string, code: string, newPassword: string) => {
+    const sanitizedEmail = sanitizeEmail(email);
+    const sanitizedPassword = sanitizePassword(newPassword);
+    if (!sanitizedEmail || !sanitizedPassword || !code.trim()) {
+      throw new Error('Completa correo, código y contraseña nueva.');
+    }
+    await backendApi.auth.resetPassword(sanitizedEmail, code.trim(), sanitizedPassword);
   };
 
   return {
@@ -125,6 +144,8 @@ export const useAuth = (): AuthContextType => {
     login,
     register,
     logout,
+    requestPasswordReset,
+    verifyResetCode,
     resetPassword,
     loading,
   };
