@@ -147,6 +147,7 @@ export interface UserPostRequest {
   content?: string | null;
   status?: string | null;
   videoUrl?: string | null;
+  imageUrl?: string | null;
   publishedAt?: string | null;
   tags?: string[];
   targetPlatforms?: string[];
@@ -160,6 +161,7 @@ export interface UserPost {
   thumbnail?: string | null;
   status: string;
   videoUrl?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt?: string | null;
   publishedAt?: string | null;

@@ -113,7 +113,8 @@ const AIDashboard: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [descriptionCharCount, setDescriptionCharCount] = useState(0);
-  const MAX_DESCRIPTION_LENGTH = 500;
+  const MAX_TITLE_LENGTH = 30;
+  const MAX_DESCRIPTION_LENGTH = 200;
   const [selectedTargets, setSelectedTargets] = useState<TargetValue[]>(['youtube']);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
@@ -269,17 +270,6 @@ const AIDashboard: React.FC = () => {
     });
   };
 
-  const createUploadFileFromGeneratedImage = async (image: ImageGenerationResponse) => {
-    const blob = await backendApi.downloadGeneratedImage(image.imageUrl);
-
-    if (!blob.size) {
-      throw new Error('Generated image does not contain valid data.');
-    }
-
-    const jpegBlob = await convertBlobToJpeg(blob);
-    return new File([jpegBlob], `anypost-ai-${Date.now()}.jpg`, { type: 'image/jpeg' });
-  };
-
   const handlePublishImage = async () => {
     setPublishSuccess(null);
     setPublishError(null);
@@ -294,18 +284,41 @@ const AIDashboard: React.FC = () => {
       return;
     }
 
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
       setPublishError('Please enter a title.');
+      return;
+    }
+    if (trimmedTitle.length > MAX_TITLE_LENGTH) {
+      setPublishError(`Title must be ${MAX_TITLE_LENGTH} characters or less.`);
       return;
     }
 
     setIsPublishing(true);
     try {
-      const file = await createUploadFileFromGeneratedImage(generatedImage);
+      // Step 1: Upload AI image to Blob Storage
+      const uploadResponse = await backendApi.uploadAiImageToBlobStorage(generatedImage.imageUrl);
+      const blobUrl = uploadResponse.blobUrl;
 
-      const response = await backendApi.uploadVideoAsset({
+      // Step 2: Download the image from Blob Storage and create a File for upload
+      // Download directly from Blob Storage URL
+      const response = await fetch(blobUrl);
+      if (!response.ok) {
+        throw new Error('Failed to download image from Blob Storage.');
+      }
+      const blob = await response.blob();
+      if (!blob.size) {
+        throw new Error('Generated image does not contain valid data.');
+      }
+
+      const jpegBlob = await convertBlobToJpeg(blob);
+      const file = new File([jpegBlob], `anypost-ai-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+      // Step 3: Upload to social networks using the standard upload endpoint
+      // The backend will automatically detect it's an image
+      const uploadResult = await backendApi.uploadVideoAsset({
         file,
-        title: title.trim(),
+        title: trimmedTitle,
         description: description.trim(),
         authUserId: currentUser!.authUserId,
         targets: targetsPreview,
@@ -673,13 +686,35 @@ const AIDashboard: React.FC = () => {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                      Publication Title *
-                    </label>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 block">
+                        Publication Title *
+                      </label>
+                      <span className={`text-xs font-medium ${
+                        title.length > MAX_TITLE_LENGTH 
+                          ? 'text-red-400' 
+                          : title.length > MAX_TITLE_LENGTH * 0.8 
+                          ? 'text-yellow-400' 
+                          : 'text-gray-500'
+                      }`}>
+                        {title.length} / {MAX_TITLE_LENGTH}
+                      </span>
+                    </div>
                     <input
                       type="text"
                       value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        // Limitar a MAX_TITLE_LENGTH caracteres
+                        if (value.length <= MAX_TITLE_LENGTH) {
+                          setTitle(value);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Trim espacios al inicio y final al perder el foco
+                        setTitle(e.target.value.trim());
+                      }}
+                      maxLength={MAX_TITLE_LENGTH}
                       placeholder="Enter your campaign title"
                       className="w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl"
                       required

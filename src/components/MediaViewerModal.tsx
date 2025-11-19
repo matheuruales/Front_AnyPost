@@ -67,7 +67,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const handleDownload = () => {
     if (!post) return;
 
-    const mediaUrl = post.videoUrl || post.thumbnail;
+    const mediaUrl = post.videoUrl || post.imageUrl || post.thumbnail;
     if (!mediaUrl) return;
 
     const proxiedUrl = getStreamingUrl(mediaUrl);
@@ -75,7 +75,8 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
 
     const link = document.createElement('a');
     link.href = proxiedUrl;
-    link.download = `${post.title.replace(/[^a-z0-9]/gi, '_')}.${post.videoUrl ? 'mp4' : 'jpg'}`;
+    const extension = post.videoUrl ? 'mp4' : (post.imageUrl ? 'jpg' : 'jpg');
+    link.download = `${post.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -150,7 +151,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
 
   if (!isOpen || !post) return null;
 
-  const mediaUrl = post.videoUrl || post.thumbnail;
+  const mediaUrl = post.videoUrl || post.imageUrl || post.thumbnail;
   const isVideo = !!post.videoUrl;
 
   return (

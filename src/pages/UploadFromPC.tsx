@@ -157,7 +157,8 @@ const UploadFromPC: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [descriptionCharCount, setDescriptionCharCount] = useState(0);
-  const MAX_DESCRIPTION_LENGTH = 500;
+  const MAX_TITLE_LENGTH = 30;
+  const MAX_DESCRIPTION_LENGTH = 200;
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileType, setFileType] = useState<FileType>('video');
@@ -224,6 +225,10 @@ const UploadFromPC: React.FC = () => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       setErrorMessage('Please add a title for your publication.');
+      return;
+    }
+    if (trimmedTitle.length > MAX_TITLE_LENGTH) {
+      setErrorMessage(`Title must be ${MAX_TITLE_LENGTH} characters or less.`);
       return;
     }
 
@@ -443,13 +448,35 @@ const UploadFromPC: React.FC = () => {
                     
                     <div className="space-y-6">
                       <div>
-                        <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mb-3 block">
-                          Publication Title
-                        </label>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 block">
+                            Publication Title
+                          </label>
+                          <span className={`text-xs font-medium ${
+                            title.length > MAX_TITLE_LENGTH 
+                              ? 'text-red-400' 
+                              : title.length > MAX_TITLE_LENGTH * 0.8 
+                              ? 'text-yellow-400' 
+                              : 'text-gray-500'
+                          }`}>
+                            {title.length} / {MAX_TITLE_LENGTH}
+                          </span>
+                        </div>
                         <input
                           type="text"
                           value={title}
-                          onChange={(event) => setTitle(event.target.value)}
+                          onChange={(event) => {
+                            let value = event.target.value;
+                            // Limitar a MAX_TITLE_LENGTH caracteres
+                            if (value.length <= MAX_TITLE_LENGTH) {
+                              setTitle(value);
+                            }
+                          }}
+                          onBlur={(event) => {
+                            // Trim espacios al inicio y final al perder el foco
+                            setTitle(event.target.value.trim());
+                          }}
+                          maxLength={MAX_TITLE_LENGTH}
                           className="w-full rounded-xl border border-white/10 bg-black/40 px-5 py-4 text-white placeholder-gray-500 transition-all duration-300 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 backdrop-blur-xl"
                           placeholder="Enter your campaign title"
                           required

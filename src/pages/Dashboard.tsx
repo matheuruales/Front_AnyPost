@@ -62,8 +62,10 @@ const Dashboard: React.FC = () => {
         id: p.id,
         title: p.title,
         hasVideoUrl: !!p.videoUrl,
+        hasImageUrl: !!p.imageUrl,
         hasThumbnail: !!p.thumbnail,
         videoUrl: p.videoUrl,
+        imageUrl: p.imageUrl,
         thumbnail: p.thumbnail,
         ownerAuthUserId: p.ownerAuthUserId,
         status: p.status
@@ -72,15 +74,16 @@ const Dashboard: React.FC = () => {
       // Log all posts to see what we're getting
       console.log('All posts received:', userPosts);
 
-      // Filter posts with videoUrl or thumbnail (videos and images)
+      // Filter posts with videoUrl, imageUrl or thumbnail (videos and images)
       // Also include posts that might have content but no explicit media field
       const mediaPosts = userPosts.filter(post => {
-        const hasMedia = !!(post.videoUrl || post.thumbnail);
+        const hasMedia = !!(post.videoUrl || post.imageUrl || post.thumbnail);
         if (!hasMedia) {
           console.log('Post filtered out (no media):', {
             id: post.id,
             title: post.title,
             videoUrl: post.videoUrl,
+            imageUrl: post.imageUrl,
             thumbnail: post.thumbnail
           });
         }
@@ -455,6 +458,20 @@ const Dashboard: React.FC = () => {
                                   />
                                 )}
                               </>
+                            ) : video.imageUrl ? (
+                              <img
+                                src={getStreamingUrl(video.imageUrl)}
+                                alt={video.title}
+                                className="h-full w-full object-cover cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleVideoSelect(video);
+                                }}
+                                onError={(e) => {
+                                  // Fallback if image fails to load
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
                             ) : video.thumbnail ? (
                               <img
                                 src={video.thumbnail}
@@ -478,17 +495,21 @@ const Dashboard: React.FC = () => {
                               </div>
                             )}
                             
-                            {/* Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-none"></div>
-                            
-                            {/* Play Icon */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-none">
-                              <div className="rounded-full bg-white/20 backdrop-blur-xl p-4">
-                                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M8 5v14l11-7z" />
-                                </svg>
-                              </div>
-                            </div>
+                            {/* Overlay - Solo para videos */}
+                            {video.videoUrl && (
+                              <>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-none"></div>
+                                
+                                {/* Play Icon - Solo para videos */}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-none">
+                                  <div className="rounded-full bg-white/20 backdrop-blur-xl p-4">
+                                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
 
                           {/* Video Info */}

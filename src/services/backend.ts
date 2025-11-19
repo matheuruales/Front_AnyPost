@@ -1,4 +1,5 @@
 import api, { API_BASE_URL } from './api';
+import axios from 'axios';
 import {
   AssetRequest,
   AssetResponse,
@@ -100,6 +101,16 @@ export const backendApi = {
     return withJsonData<UserPost[]>(api.get('/user-posts', { params: cleanParams }));
   },
   getUserPostById: (postId: string) => withJsonData<UserPost>(api.get(`/user-posts/${postId}`)),
+  
+  // Public endpoint for shared posts (doesn't require authentication)
+  // Only returns posts with status = "published"
+  getSharedPostById: (postId: string) => {
+    // Create a new axios instance without interceptors for public access
+    const publicApi = axios.create({
+      baseURL: API_BASE_URL,
+    });
+    return withJsonData<UserPost>(publicApi.get(`/posts/public/${postId}`));
+  },
   createUserPost: (authUserId: string, payload: UserPostRequest) =>
     withJsonData<UserPost>(api.post(`/users/${authUserId}/posts`, payload)),
   deleteUserPost: (postId: string) => api.delete(`/posts/${postId}`),
@@ -153,6 +164,11 @@ export const backendApi = {
 
   generateImageFromPrompt: (payload: ImageGenerationRequest) =>
     withJsonData<ImageGenerationResponse>(api.post('/ai/images/generate', payload)),
+
+  uploadAiImageToBlobStorage: (imageUrl: string) =>
+    withJsonData<{ blobUrl: string }>(api.post('/ai/images/upload-to-blob', null, {
+      params: { imageUrl },
+    })),
 
   downloadGeneratedImage: (imageUrl: string) =>
     api

@@ -20,12 +20,20 @@ const SharePost: React.FC = () => {
         return;
       }
       try {
-        const response = await backendApi.getUserPostById(postId);
+        // Use public endpoint for shared posts (only returns published posts)
+        const response = await backendApi.getSharedPostById(postId);
         setPost(response);
         setError(null);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load shared post', err);
-        setError('We could not find this post. It may have been deleted.');
+        // Handle different error cases
+        if (err.response?.status === 404) {
+          setError('This post could not be found. It may have been deleted or is not published yet.');
+        } else if (err.response?.status === 403 || err.response?.status === 401) {
+          setError('This post is not publicly available. Only published posts can be shared.');
+        } else {
+          setError('We could not load this post. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -35,10 +43,13 @@ const SharePost: React.FC = () => {
   }, [postId]);
 
   const mediaUrl = useMemo(() => {
-    if (!post?.videoUrl) {
-      return undefined;
+    if (post?.videoUrl) {
+      return backendApi.getVideoStreamUrl(post.videoUrl);
     }
-    return backendApi.getVideoStreamUrl(post.videoUrl);
+    if (post?.imageUrl) {
+      return backendApi.getVideoStreamUrl(post.imageUrl);
+    }
+    return undefined;
   }, [post]);
 
   const isVideo = useMemo(() => {
@@ -57,10 +68,10 @@ const SharePost: React.FC = () => {
           <h1 className="text-3xl font-bold text-white mb-4">Share Link</h1>
           <p className="text-gray-400 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 transition"
           >
-            Go back to dashboard
+            Go to home
           </button>
         </div>
       </Layout>
@@ -79,14 +90,14 @@ const SharePost: React.FC = () => {
 
         <div className="relative z-10 mx-auto max-w-4xl px-4 py-16">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="group relative overflow-hidden rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20 mb-6"
           >
             <span className="relative z-10 flex items-center gap-2">
               <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to dashboard
+              Back to home
             </span>
           </button>
 

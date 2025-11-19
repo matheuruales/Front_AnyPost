@@ -59,7 +59,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('currentUser');
-      if (!window.location.pathname.startsWith('/login')) {
+      // Don't redirect to login if we're on a share page (public route)
+      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/share')) {
         window.location.href = '/login';
       }
     }

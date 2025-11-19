@@ -106,11 +106,7 @@ const App: React.FC = () => {
           />
           <Route
             path="/share/:postId"
-            element={
-              <ProtectedRoute>
-                <SharePost />
-              </ProtectedRoute>
-            }
+            element={<SharePost />}
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
