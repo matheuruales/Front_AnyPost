@@ -42,13 +42,36 @@ const SharePost: React.FC = () => {
     fetchPost();
   }, [postId]);
 
-  const mediaUrl = useMemo(() => {
-    if (post?.videoUrl) {
-      const url = post.videoUrl;
-      return url.includes('/videos/stream?url=') ? url : backendApi.getVideoStreamUrl(url);
+  const unwrapStreamUrl = (url: string | undefined | null): string | undefined => {
+    if (!url) return undefined;
+    try {
+      const parsed = new URL(url);
+      const nested = parsed.searchParams.get('url');
+      if (nested) return decodeURIComponent(nested);
+    } catch {
+      // ignore
     }
-    if (post?.imageUrl) {
-      return post.imageUrl;
+    return url;
+  };
+
+  const isLikelyImageUrl = (url: string | undefined | null): boolean => {
+    if (!url) return false;
+    const clean = url.split('?')[0];
+    return /\.(png|jpe?g|gif|webp|svg|heic|heif)$/i.test(clean);
+  };
+
+  const mediaUrl = useMemo(() => {
+    const primaryImage = unwrapStreamUrl(post?.imageUrl ?? undefined);
+    const thumb = unwrapStreamUrl(post?.thumbnail ?? undefined);
+    const rawVideo = post?.videoUrl ?? undefined;
+    const unwrappedVideo = unwrapStreamUrl(rawVideo);
+
+    if (primaryImage) return primaryImage;
+    if (isLikelyImageUrl(unwrappedVideo)) return unwrappedVideo;
+    if (thumb) return thumb;
+
+    if (rawVideo) {
+      return rawVideo.includes('/videos/stream?url=') ? rawVideo : backendApi.getVideoStreamUrl(rawVideo);
     }
     return undefined;
   }, [post]);

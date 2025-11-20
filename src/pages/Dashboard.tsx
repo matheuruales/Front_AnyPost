@@ -22,6 +22,24 @@ const getImageUrl = (imageUrl?: string | null, thumbnail?: string | null): strin
   return imageUrl ?? thumbnail ?? undefined;
 };
 
+const unwrapStreamUrl = (url: string | undefined | null): string | undefined => {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    const nested = parsed.searchParams.get('url');
+    if (nested) return decodeURIComponent(nested);
+  } catch {
+    // fall through with original URL
+  }
+  return url;
+};
+
+const isLikelyImageUrl = (url: string | undefined | null): boolean => {
+  if (!url) return false;
+  const clean = url.split('?')[0];
+  return /\.(png|jpe?g|gif|webp|svg|heic|heif)$/i.test(clean);
+};
+
 const Dashboard: React.FC = () => {
   const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
@@ -397,17 +415,41 @@ const Dashboard: React.FC = () => {
                           {/* Media Thumbnail */}
                           <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-gray-900 to-black">
                             {(() => {
-                              const primaryImage = getImageUrl(video.imageUrl, null);
-                              const thumbnail = video.thumbnail || undefined;
-                              const videoSource = getVideoStreamUrl(video.videoUrl);
+                              const primaryImage = unwrapStreamUrl(getImageUrl(video.imageUrl, null));
+                              const thumbImage = unwrapStreamUrl(video.thumbnail);
+                              const rawVideoUrl = video.videoUrl || undefined;
+                              const unwrappedVideo = unwrapStreamUrl(rawVideoUrl);
 
-                              // If we have a video, prefer rendering it with a poster when available
+                              let imageSource = primaryImage;
+                              if (!imageSource && isLikelyImageUrl(unwrappedVideo)) {
+                                imageSource = unwrappedVideo;
+                              }
+
+                              const videoSource = imageSource ? undefined : getVideoStreamUrl(rawVideoUrl);
+
+                              if (imageSource) {
+                                return (
+                                  <img
+                                    src={imageSource}
+                                    alt={video.title}
+                                    className="h-full w-full object-cover cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVideoSelect(video);
+                                    }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                );
+                              }
+
                               if (videoSource) {
-                                if (thumbnail && !primaryImage) {
+                                if (thumbImage) {
                                   return (
                                     <>
                                       <img
-                                        src={thumbnail}
+                                        src={thumbImage}
                                         alt={video.title}
                                         className="absolute inset-0 h-full w-full object-cover"
                                         onClick={(e) => {
@@ -469,25 +511,6 @@ const Dashboard: React.FC = () => {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleVideoSelect(video);
-                                    }}
-                                  />
-                                );
-                              }
-
-                              // Pure image (no video)
-                              const imageSource = primaryImage || thumbnail;
-                              if (imageSource) {
-                                return (
-                                  <img
-                                    src={imageSource}
-                                    alt={video.title}
-                                    className="h-full w-full object-cover cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleVideoSelect(video);
-                                    }}
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
                                     }}
                                   />
                                 );

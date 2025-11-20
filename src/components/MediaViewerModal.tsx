@@ -151,14 +151,41 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
 
   if (!isOpen || !post) return null;
 
-  const hasImage = Boolean(post.imageUrl || post.thumbnail);
-  const isVideo = Boolean(post.videoUrl) && !hasImage;
+  const unwrapStreamUrl = (url: string | undefined | null): string | undefined => {
+    if (!url) return undefined;
+    try {
+      const parsed = new URL(url);
+      const nested = parsed.searchParams.get('url');
+      if (nested) return decodeURIComponent(nested);
+    } catch {
+      // fallback to original
+    }
+    return url;
+  };
+
+  const isLikelyImageUrl = (url: string | undefined | null): boolean => {
+    if (!url) return false;
+    const clean = url.split('?')[0];
+    return /\.(png|jpe?g|gif|webp|svg|heic|heif)$/i.test(clean);
+  };
+
+  const primaryImage = unwrapStreamUrl(post.imageUrl);
+  const thumbnail = unwrapStreamUrl(post.thumbnail);
+  const rawVideo = post.videoUrl;
+  const unwrappedVideo = unwrapStreamUrl(rawVideo);
+
+  let imageUrl = primaryImage || thumbnail;
+  if (!imageUrl && isLikelyImageUrl(unwrappedVideo)) {
+    imageUrl = unwrappedVideo;
+  }
+
+  const isVideo = Boolean(rawVideo) && !imageUrl;
   const mediaUrl = isVideo
     ? (() => {
-        const url = post.videoUrl || '';
+        const url = rawVideo || '';
         return url.includes('/videos/stream?url=') ? url : backendApi.getVideoStreamUrl(url);
       })()
-    : (post.imageUrl || post.thumbnail || '');
+    : (imageUrl || '');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
