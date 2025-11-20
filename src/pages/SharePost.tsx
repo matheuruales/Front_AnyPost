@@ -4,6 +4,8 @@ import Layout from '../components/Layout';
 import Loader from '../components/ui/Loader';
 import { backendApi } from '../services/backend';
 import { UserPost } from '../types/backend';
+import axios from 'axios';
+import { API_BASE_URL } from '../services/api';
 
 const SharePost: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -15,25 +17,34 @@ const SharePost: React.FC = () => {
   useEffect(() => {
     const fetchPost = async () => {
       if (!postId) {
-        setError('This share link is invalid.');
+        setError('Link inválido.');
         setLoading(false);
         return;
       }
+
+      setLoading(true);
+      setError(null);
+
+      // 1) Intento público (publicado)
       try {
-        // Use public endpoint for shared posts (only returns published posts)
         const response = await backendApi.getSharedPostById(postId);
         setPost(response);
         setError(null);
-      } catch (err: any) {
-        console.error('Failed to load shared post', err);
-        // Handle different error cases
-        if (err.response?.status === 404) {
-          setError('This post could not be found. It may have been deleted or is not published yet.');
-        } else if (err.response?.status === 403 || err.response?.status === 401) {
-          setError('This post is not publicly available. Only published posts can be shared.');
-        } else {
-          setError('We could not load this post. Please try again later.');
-        }
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.warn('[SharePost] Public endpoint falló, probando fallback', err);
+      }
+
+      // 2) Fallback sin auth a /user-posts/:id (para cualquier estado)
+      try {
+        const publicApi = axios.create({ baseURL: API_BASE_URL });
+        const { data } = await publicApi.get<UserPost>(`/user-posts/${postId}`);
+        setPost(data);
+        setError(null);
+      } catch (err) {
+        console.error('[SharePost] No se pudo cargar el post', err);
+        setError('No pudimos cargar este contenido. Verifica el enlace o inténtalo más tarde.');
       } finally {
         setLoading(false);
       }
