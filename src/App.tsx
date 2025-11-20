@@ -5,7 +5,6 @@ import Loader from './components/ui/Loader';
 
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
-const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const CreatorHub = React.lazy(() => import('./pages/CreatorHub'));
@@ -62,14 +61,6 @@ const App: React.FC = () => {
             element={
               <PublicRoute>
                 <Register />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <PublicRoute>
-                <ForgotPassword />
               </PublicRoute>
             }
           />

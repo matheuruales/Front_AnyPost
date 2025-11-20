@@ -196,15 +196,6 @@ const Login: React.FC = () => {
                       Recuérdame
                     </label>
                   </div>
-
-                  <div className="text-sm">
-                    <Link
-                      to="/forgot-password"
-                      className="font-medium bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hover:from-purple-300 hover:to-pink-300 transition-all"
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </Link>
-                  </div>
                 </div>
 
                 {/* Botón */}
