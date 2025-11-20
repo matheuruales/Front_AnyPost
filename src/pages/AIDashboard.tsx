@@ -296,12 +296,8 @@ const AIDashboard: React.FC = () => {
 
     setIsPublishing(true);
     try {
-      // Descargar la imagen generada directamente desde la URL pública que devuelve OpenAI
-      const response = await fetch(generatedImage.imageUrl);
-      if (!response.ok) {
-        throw new Error('Failed to download generated image.');
-      }
-      const blob = await response.blob();
+      // Descargar la imagen generada mediante el proxy backend para evitar CORS
+      const blob = await backendApi.downloadGeneratedImage(generatedImage.imageUrl);
       if (!blob.size) {
         throw new Error('Generated image does not contain valid data.');
       }
