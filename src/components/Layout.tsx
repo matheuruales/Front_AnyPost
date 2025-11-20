@@ -7,10 +7,12 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, hideNavbar = false }) => {
+  const mainPadding = hideNavbar ? '' : 'pt-16 sm:pt-20';
+
   return (
     <div className="min-h-screen bg-black grid-pattern">
       {!hideNavbar && <Navbar />}
-      <main className="fade-in">{children}</main>
+      <main className={`fade-in ${mainPadding}`}>{children}</main>
       
       {/* Footer */}
       <footer className="border-t border-gray-800 mt-12 py-8">
