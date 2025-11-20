@@ -185,7 +185,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const isVideo = hasVideo;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/90 backdrop-blur-sm"
@@ -197,7 +197,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
+          className="absolute top-6 right-6 z-20 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
