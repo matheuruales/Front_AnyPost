@@ -153,7 +153,12 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
 
   const hasImage = Boolean(post.imageUrl || post.thumbnail);
   const isVideo = Boolean(post.videoUrl) && !hasImage;
-  const mediaUrl = isVideo ? backendApi.getVideoStreamUrl(post.videoUrl || '') : (post.imageUrl || post.thumbnail || '');
+  const mediaUrl = isVideo
+    ? (() => {
+        const url = post.videoUrl || '';
+        return url.includes('/videos/stream?url=') ? url : backendApi.getVideoStreamUrl(url);
+      })()
+    : (post.imageUrl || post.thumbnail || '');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

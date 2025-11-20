@@ -11,10 +11,15 @@ import { VideoIndexMap } from '../data-structures/VideoIndexMap';
 import { VideoThumbnailCache } from '../data-structures/VideoThumbnailCache';
 import MediaViewerModal from '../components/MediaViewerModal';
 
-// Helper function to get streaming URL for videos (videos only)
-const getStreamingUrl = (videoUrl: string | null | undefined): string | undefined => {
+// Ensure we only wrap raw blob URLs once (avoid double /videos/stream?url= nesting)
+const getVideoStreamUrl = (videoUrl: string | null | undefined): string | undefined => {
   if (!videoUrl) return undefined;
+  if (videoUrl.includes('/videos/stream?url=')) return videoUrl;
   return backendApi.getVideoStreamUrl(videoUrl);
+};
+
+const getImageUrl = (imageUrl?: string | null, thumbnail?: string | null): string | undefined => {
+  return imageUrl ?? thumbnail ?? undefined;
 };
 
 const Dashboard: React.FC = () => {
@@ -392,80 +397,86 @@ const Dashboard: React.FC = () => {
                           {/* Media Thumbnail */}
                           <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-gray-900 to-black">
                             {(() => {
-                              const hasImageMedia = Boolean(video.imageUrl || video.thumbnail);
-                              const hasVideoMedia = Boolean(video.videoUrl) && !hasImageMedia;
+                              const primaryImage = getImageUrl(video.imageUrl, null);
+                              const thumbnail = video.thumbnail || undefined;
+                              const videoSource = getVideoStreamUrl(video.videoUrl);
 
-                              if (hasVideoMedia) {
-                                return (
-                                  <>
-                                    {video.thumbnail ? (
-                                      <>
-                                        <img
-                                          src={video.thumbnail}
-                                          alt={video.title}
-                                          className="absolute inset-0 h-full w-full object-cover"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleVideoSelect(video);
-                                          }}
-                                        />
-                                        <video
-                                          src={getStreamingUrl(video.videoUrl)}
-                                          className="absolute inset-0 h-full w-full object-cover opacity-0 hover:opacity-100 transition-opacity"
-                                          muted
-                                          preload="none"
-                                          playsInline
-                                          onMouseEnter={(e) => {
-                                            const target = e.target as HTMLVideoElement;
-                                            target.currentTime = 0;
-                                            target.play().catch(() => {});
-                                            e.currentTarget.parentElement?.querySelector('img')?.style.setProperty('opacity', '0');
-                                            e.currentTarget.style.opacity = '1';
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            const target = e.target as HTMLVideoElement;
-                                            target.pause();
-                                            target.currentTime = 0;
-                                            e.currentTarget.style.opacity = '0';
-                                            e.currentTarget.parentElement?.querySelector('img')?.style.setProperty('opacity', '1');
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleVideoSelect(video);
-                                          }}
-                                        />
-                                      </>
-                                    ) : (
+                              // If we have a video, prefer rendering it with a poster when available
+                              if (videoSource) {
+                                if (thumbnail && !primaryImage) {
+                                  return (
+                                    <>
+                                      <img
+                                        src={thumbnail}
+                                        alt={video.title}
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleVideoSelect(video);
+                                        }}
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
                                       <video
-                                        src={getStreamingUrl(video.videoUrl)}
-                                        className="h-full w-full object-cover"
+                                        src={videoSource}
+                                        className="absolute inset-0 h-full w-full object-cover opacity-0 hover:opacity-100 transition-opacity"
                                         muted
-                                        preload="metadata"
+                                        preload="none"
                                         playsInline
                                         onMouseEnter={(e) => {
                                           const target = e.target as HTMLVideoElement;
-                                          if (target.readyState >= 2) {
-                                            target.currentTime = 0;
-                                            target.play().catch(() => {});
-                                          }
+                                          target.currentTime = 0;
+                                          target.play().catch(() => {});
+                                          e.currentTarget.parentElement?.querySelector('img')?.setAttribute('style', 'opacity:0;');
+                                          e.currentTarget.style.opacity = '1';
                                         }}
                                         onMouseLeave={(e) => {
                                           const target = e.target as HTMLVideoElement;
                                           target.pause();
                                           target.currentTime = 0;
+                                          e.currentTarget.style.opacity = '0';
+                                          e.currentTarget.parentElement?.querySelector('img')?.setAttribute('style', 'opacity:1;');
                                         }}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleVideoSelect(video);
                                         }}
                                       />
-                                    )}
-                                  </>
+                                    </>
+                                  );
+                                }
+
+                                return (
+                                  <video
+                                    src={videoSource}
+                                    className="h-full w-full object-cover"
+                                    muted
+                                    preload="metadata"
+                                    playsInline
+                                    onMouseEnter={(e) => {
+                                      const target = e.target as HTMLVideoElement;
+                                      if (target.readyState >= 2) {
+                                        target.currentTime = 0;
+                                        target.play().catch(() => {});
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      const target = e.target as HTMLVideoElement;
+                                      target.pause();
+                                      target.currentTime = 0;
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVideoSelect(video);
+                                    }}
+                                  />
                                 );
                               }
 
-                              if (hasImageMedia) {
-                                const imageSource = video.imageUrl || video.thumbnail;
+                              // Pure image (no video)
+                              const imageSource = primaryImage || thumbnail;
+                              if (imageSource) {
                                 return (
                                   <img
                                     src={imageSource}

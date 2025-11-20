@@ -44,7 +44,8 @@ const SharePost: React.FC = () => {
 
   const mediaUrl = useMemo(() => {
     if (post?.videoUrl) {
-      return backendApi.getVideoStreamUrl(post.videoUrl);
+      const url = post.videoUrl;
+      return url.includes('/videos/stream?url=') ? url : backendApi.getVideoStreamUrl(url);
     }
     if (post?.imageUrl) {
       return post.imageUrl;
