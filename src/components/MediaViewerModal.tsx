@@ -151,8 +151,9 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
 
   if (!isOpen || !post) return null;
 
-  const mediaUrl = post.videoUrl || post.imageUrl || post.thumbnail;
-  const isVideo = !!post.videoUrl;
+  const hasImage = Boolean(post.imageUrl || post.thumbnail);
+  const isVideo = Boolean(post.videoUrl) && !hasImage;
+  const mediaUrl = isVideo ? post.videoUrl : (post.imageUrl || post.thumbnail);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -327,4 +328,3 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
 };
 
 export default MediaViewerModal;
-

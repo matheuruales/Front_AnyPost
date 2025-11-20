@@ -391,112 +391,112 @@ const Dashboard: React.FC = () => {
                         >
                           {/* Media Thumbnail */}
                           <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-gray-900 to-black">
-                            {video.videoUrl ? (
-                              <>
-                                {/* Show thumbnail as poster if available, otherwise use video */}
-                                {video.thumbnail ? (
+                            {(() => {
+                              const hasImageMedia = Boolean(video.imageUrl || video.thumbnail);
+                              const hasVideoMedia = Boolean(video.videoUrl) && !hasImageMedia;
+
+                              if (hasVideoMedia) {
+                                return (
                                   <>
-                                    <img
-                                      src={video.thumbnail}
-                                      alt={video.title}
-                                      className="absolute inset-0 h-full w-full object-cover"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleVideoSelect(video);
-                                      }}
-                                    />
-                                    {/* Video overlay for hover preview */}
-                                    <video
-                                      src={getStreamingUrl(video.videoUrl)}
-                                      className="absolute inset-0 h-full w-full object-cover opacity-0 hover:opacity-100 transition-opacity"
-                                      muted
-                                      preload="none"
-                                      playsInline
-                                      onMouseEnter={(e) => {
-                                        const target = e.target as HTMLVideoElement;
-                                        target.currentTime = 0;
-                                        target.play().catch(() => {});
-                                        e.currentTarget.parentElement?.querySelector('img')?.style.setProperty('opacity', '0');
-                                        e.currentTarget.style.opacity = '1';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        const target = e.target as HTMLVideoElement;
-                                        target.pause();
-                                        target.currentTime = 0;
-                                        e.currentTarget.style.opacity = '0';
-                                        e.currentTarget.parentElement?.querySelector('img')?.style.setProperty('opacity', '1');
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleVideoSelect(video);
-                                      }}
-                                    />
+                                    {video.thumbnail ? (
+                                      <>
+                                        <img
+                                          src={video.thumbnail}
+                                          alt={video.title}
+                                          className="absolute inset-0 h-full w-full object-cover"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleVideoSelect(video);
+                                          }}
+                                        />
+                                        <video
+                                          src={getStreamingUrl(video.videoUrl)}
+                                          className="absolute inset-0 h-full w-full object-cover opacity-0 hover:opacity-100 transition-opacity"
+                                          muted
+                                          preload="none"
+                                          playsInline
+                                          onMouseEnter={(e) => {
+                                            const target = e.target as HTMLVideoElement;
+                                            target.currentTime = 0;
+                                            target.play().catch(() => {});
+                                            e.currentTarget.parentElement?.querySelector('img')?.style.setProperty('opacity', '0');
+                                            e.currentTarget.style.opacity = '1';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            const target = e.target as HTMLVideoElement;
+                                            target.pause();
+                                            target.currentTime = 0;
+                                            e.currentTarget.style.opacity = '0';
+                                            e.currentTarget.parentElement?.querySelector('img')?.style.setProperty('opacity', '1');
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleVideoSelect(video);
+                                          }}
+                                        />
+                                      </>
+                                    ) : (
+                                      <video
+                                        src={getStreamingUrl(video.videoUrl)}
+                                        className="h-full w-full object-cover"
+                                        muted
+                                        preload="metadata"
+                                        playsInline
+                                        onMouseEnter={(e) => {
+                                          const target = e.target as HTMLVideoElement;
+                                          if (target.readyState >= 2) {
+                                            target.currentTime = 0;
+                                            target.play().catch(() => {});
+                                          }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          const target = e.target as HTMLVideoElement;
+                                          target.pause();
+                                          target.currentTime = 0;
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleVideoSelect(video);
+                                        }}
+                                      />
+                                    )}
                                   </>
-                                ) : (
-                                  <video
-                                    src={getStreamingUrl(video.videoUrl)}
-                                    className="h-full w-full object-cover"
-                                    muted
-                                    preload="metadata"
-                                    playsInline
-                                    onMouseEnter={(e) => {
-                                      const target = e.target as HTMLVideoElement;
-                                      if (target.readyState >= 2) {
-                                        target.currentTime = 0;
-                                        target.play().catch(() => {});
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      const target = e.target as HTMLVideoElement;
-                                      target.pause();
-                                      target.currentTime = 0;
-                                    }}
+                                );
+                              }
+
+                              if (hasImageMedia) {
+                                const imageSource = video.imageUrl ? getStreamingUrl(video.imageUrl) : video.thumbnail;
+                                return (
+                                  <img
+                                    src={imageSource}
+                                    alt={video.title}
+                                    className="h-full w-full object-cover cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleVideoSelect(video);
                                     }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
                                   />
-                                )}
-                              </>
-                            ) : video.imageUrl ? (
-                              <img
-                                src={getStreamingUrl(video.imageUrl)}
-                                alt={video.title}
-                                className="h-full w-full object-cover cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleVideoSelect(video);
-                                }}
-                                onError={(e) => {
-                                  // Fallback if image fails to load
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : video.thumbnail ? (
-                              <img
-                                src={video.thumbnail}
-                                alt={video.title}
-                                className="h-full w-full object-cover cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleVideoSelect(video);
-                                }}
-                                onError={(e) => {
-                                  // Fallback if image fails to load
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center cursor-pointer" onClick={(e) => {
-                                e.stopPropagation();
-                                handleVideoSelect(video);
-                              }}>
-                                <div className="text-4xl opacity-40">🎬</div>
-                              </div>
-                            )}
+                                );
+                              }
+
+                              return (
+                                <div
+                                  className="flex h-full items-center justify-center cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleVideoSelect(video);
+                                  }}
+                                >
+                                  <div className="text-4xl opacity-40">🎬</div>
+                                </div>
+                              );
+                            })()}
                             
                             {/* Overlay - Solo para videos */}
-                            {video.videoUrl && (
+                            {Boolean(video.videoUrl) && !Boolean(video.imageUrl || video.thumbnail) && (
                               <>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-none"></div>
                                 
