@@ -420,36 +420,20 @@ const Dashboard: React.FC = () => {
                               const rawVideoUrl = video.videoUrl || undefined;
                               const unwrappedVideo = unwrapStreamUrl(rawVideoUrl);
 
-                              let imageSource = primaryImage;
-                              if (!imageSource && isLikelyImageUrl(unwrappedVideo)) {
-                                imageSource = unwrappedVideo;
-                              }
+                              const posterImage =
+                                primaryImage ||
+                                thumbImage ||
+                                (isLikelyImageUrl(unwrappedVideo) ? unwrappedVideo : undefined);
 
-                              const videoSource = imageSource ? undefined : getVideoStreamUrl(rawVideoUrl);
-
-                              if (imageSource) {
-                                return (
-                                  <img
-                                    src={imageSource}
-                                    alt={video.title}
-                                    className="h-full w-full object-cover cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleVideoSelect(video);
-                                    }}
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                    }}
-                                  />
-                                );
-                              }
+                              const hasVideo = Boolean(rawVideoUrl && !isLikelyImageUrl(unwrappedVideo));
+                              const videoSource = hasVideo ? getVideoStreamUrl(rawVideoUrl) : undefined;
 
                               if (videoSource) {
-                                if (thumbImage) {
+                                if (posterImage) {
                                   return (
                                     <>
                                       <img
-                                        src={thumbImage}
+                                        src={posterImage}
                                         alt={video.title}
                                         className="absolute inset-0 h-full w-full object-cover"
                                         onClick={(e) => {
@@ -516,6 +500,24 @@ const Dashboard: React.FC = () => {
                                 );
                               }
 
+                              // Pure imagen (sin video reproducible)
+                              if (posterImage) {
+                                return (
+                                  <img
+                                    src={posterImage}
+                                    alt={video.title}
+                                    className="h-full w-full object-cover cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVideoSelect(video);
+                                    }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                );
+                              }
+
                               return (
                                 <div
                                   className="flex h-full items-center justify-center cursor-pointer"
@@ -530,7 +532,7 @@ const Dashboard: React.FC = () => {
                             })()}
                             
                             {/* Overlay - Solo para videos */}
-                            {Boolean(video.videoUrl) && !Boolean(video.imageUrl || video.thumbnail) && (
+                            {Boolean(video.videoUrl) && !isLikelyImageUrl(unwrapStreamUrl(video.videoUrl)) && (
                               <>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-none"></div>
                                 

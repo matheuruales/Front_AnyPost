@@ -66,14 +66,14 @@ const SharePost: React.FC = () => {
     const rawVideo = post?.videoUrl ?? undefined;
     const unwrappedVideo = unwrapStreamUrl(rawVideo);
 
-    if (primaryImage) return primaryImage;
-    if (isLikelyImageUrl(unwrappedVideo)) return unwrappedVideo;
-    if (thumb) return thumb;
+    const posterImage = primaryImage || thumb || (isLikelyImageUrl(unwrappedVideo) ? unwrappedVideo : undefined);
+    const hasVideo = Boolean(rawVideo && !isLikelyImageUrl(unwrappedVideo));
 
-    if (rawVideo) {
+    if (hasVideo) {
       return rawVideo.includes('/videos/stream?url=') ? rawVideo : backendApi.getVideoStreamUrl(rawVideo);
     }
-    return undefined;
+
+    return posterImage;
   }, [post]);
 
   const isVideo = useMemo(() => {

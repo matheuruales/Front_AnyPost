@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { UserPost } from '../types/backend';
 import { backendApi } from '../services/backend';
 
-// Helper function to get streaming URL for videos
+// Helper to get streaming URL for videos
 const getStreamingUrl = (videoUrl: string | null | undefined): string | undefined => {
   if (!videoUrl) return undefined;
+  if (videoUrl.includes('/videos/stream?url=')) return videoUrl;
   return backendApi.getVideoStreamUrl(videoUrl);
 };
 
@@ -67,10 +68,11 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const handleDownload = () => {
     if (!post) return;
 
-    const mediaUrl = post.videoUrl || post.imageUrl || post.thumbnail;
-    if (!mediaUrl) return;
+    const hasImage = Boolean(post.imageUrl || post.thumbnail);
+    const urlToDownload = hasImage ? (post.imageUrl || post.thumbnail) : post.videoUrl;
+    if (!urlToDownload) return;
 
-    const proxiedUrl = getStreamingUrl(mediaUrl);
+    const proxiedUrl = hasImage ? urlToDownload : getStreamingUrl(urlToDownload);
     if (!proxiedUrl) return;
 
     const link = document.createElement('a');
@@ -174,18 +176,13 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const rawVideo = post.videoUrl;
   const unwrappedVideo = unwrapStreamUrl(rawVideo);
 
-  let imageUrl = primaryImage || thumbnail;
-  if (!imageUrl && isLikelyImageUrl(unwrappedVideo)) {
-    imageUrl = unwrappedVideo;
-  }
+  const posterImage = primaryImage || thumbnail || (isLikelyImageUrl(unwrappedVideo) ? unwrappedVideo : undefined);
 
-  const isVideo = Boolean(rawVideo) && !imageUrl;
-  const mediaUrl = isVideo
-    ? (() => {
-        const url = rawVideo || '';
-        return url.includes('/videos/stream?url=') ? url : backendApi.getVideoStreamUrl(url);
-      })()
-    : (imageUrl || '');
+  const hasVideo = Boolean(rawVideo && !isLikelyImageUrl(unwrappedVideo));
+  const mediaUrl = hasVideo
+    ? getStreamingUrl(rawVideo || '')
+    : (posterImage || '');
+  const isVideo = hasVideo;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -238,7 +235,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
               {isVideo ? (
                 <video
                   ref={videoRef}
-                  src={getStreamingUrl(mediaUrl || undefined)}
+                  src={mediaUrl}
                   className="w-full h-full object-contain"
                   controls
                   preload="auto"
@@ -247,7 +244,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
                 />
               ) : (
                 <img
-                  src={getStreamingUrl(mediaUrl || undefined)}
+                  src={mediaUrl}
                   alt={post.title}
                   className="w-full h-full object-contain"
                 />
