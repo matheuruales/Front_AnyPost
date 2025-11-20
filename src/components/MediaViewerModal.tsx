@@ -197,7 +197,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 z-20 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
+          className="fixed top-4 right-4 md:top-6 md:right-6 z-[120] rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10 shadow-lg"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -208,7 +208,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
         {hasPrevious && (
           <button
             onClick={onPrevious}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-[110] rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -219,7 +219,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
         {hasNext && (
           <button
             onClick={onNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-[110] rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-all backdrop-blur-xl border border-white/10"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
