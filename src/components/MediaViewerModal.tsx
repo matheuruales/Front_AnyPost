@@ -31,8 +31,6 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [shareLink, setShareLink] = useState<string | null>(null);
-  const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
 
@@ -103,53 +101,6 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const handleShare = () => {
-    if (!post) return;
-
-    const shareUrl = `${window.location.origin}/share/${post.id}`;
-    setShareLink(shareUrl);
-
-    // Copy to clipboard
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        setIsLinkCopied(true);
-        setTimeout(() => setIsLinkCopied(false), 3000);
-      }).catch(() => {
-        // Fallback: create a temporary textarea
-        const textarea = document.createElement('textarea');
-        textarea.value = shareUrl;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-          document.execCommand('copy');
-          setIsLinkCopied(true);
-          setTimeout(() => setIsLinkCopied(false), 3000);
-        } catch (err) {
-          console.error('Failed to copy:', err);
-        }
-        document.body.removeChild(textarea);
-      });
-    } else {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea');
-      textarea.value = shareUrl;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand('copy');
-        setIsLinkCopied(true);
-        setTimeout(() => setIsLinkCopied(false), 3000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-      }
-      document.body.removeChild(textarea);
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -433,25 +384,6 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
                   </svg>
                   Download {isVideo ? 'Video' : 'Image'}
                 </button>
-
-                <button
-                  onClick={handleShare}
-                  className="w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4 text-sm font-bold text-white transition-all hover:scale-[1.02] hover:shadow-2xl shadow-lg shadow-purple-500/25"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                  {isLinkCopied ? '✓ Link Copied!' : 'Share Content'}
-                </button>
-
-                {shareLink && (
-                  <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 shadow-lg shadow-green-500/10">
-                    <p className="text-xs text-green-300 mb-2 font-semibold">Shareable link copied to clipboard:</p>
-                    <p className="text-xs text-green-200 break-all font-mono bg-black/30 p-2 rounded-lg">
-                      {shareLink}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
