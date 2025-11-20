@@ -151,7 +151,7 @@ const UploadFromPC: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const videoAllowedTargets: TargetValue[] = ['youtube', 'instagram', 'linkedin', 'facebook'];
+  const videoAllowedTargets: TargetValue[] = ['youtube', 'instagram', 'linkedin', 'facebook', 'tiktok'];
   const imageAllowedTargets: TargetValue[] = ['facebook', 'instagram', 'linkedin'];
 
   const [title, setTitle] = useState('');
