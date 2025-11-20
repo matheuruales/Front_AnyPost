@@ -157,6 +157,23 @@ const AIDashboard: React.FC = () => {
     );
   };
 
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const [meta, base64 = ''] = dataUrl.split(',');
+    const contentType = meta.includes(':') && meta.includes(';') ? meta.split(':')[1].split(';')[0] : 'image/png';
+    const byteCharacters = atob(base64);
+    const byteArrays = [];
+    const sliceSize = 512;
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+  };
+
   const handleGenerateImage = async (event?: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const trimmedPrompt = prompt.trim();
@@ -296,8 +313,14 @@ const AIDashboard: React.FC = () => {
 
     setIsPublishing(true);
     try {
-      // Descargar la imagen generada mediante el proxy backend para evitar CORS
-      const blob = await backendApi.downloadGeneratedImage(generatedImage.imageUrl);
+      // Si la imagen viene en data URL (base64), no hace falta proxy ni red
+      let blob: Blob;
+      if (generatedImage.imageUrl.startsWith('data:image')) {
+        blob = dataUrlToBlob(generatedImage.imageUrl);
+      } else {
+        // Descargar la imagen generada mediante el proxy backend para evitar CORS
+        blob = await backendApi.downloadGeneratedImage(generatedImage.imageUrl);
+      }
       if (!blob.size) {
         throw new Error('Generated image does not contain valid data.');
       }
