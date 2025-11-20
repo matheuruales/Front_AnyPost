@@ -185,7 +185,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
   const isVideo = hasVideo;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/90 backdrop-blur-sm"
@@ -193,7 +193,7 @@ const MediaViewerModal: React.FC<MediaViewerModalProps> = ({
       />
 
       {/* Modal Content */}
-      <div className="relative z-10 w-full h-full max-w-7xl mx-auto p-4 md:p-8 flex flex-col">
+      <div className="relative z-10 w-full h-full max-w-7xl mx-auto p-4 md:p-8 pt-16 md:pt-20 flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
