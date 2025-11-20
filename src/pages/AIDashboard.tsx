@@ -296,15 +296,10 @@ const AIDashboard: React.FC = () => {
 
     setIsPublishing(true);
     try {
-      // Step 1: Upload AI image to Blob Storage
-      const uploadResponse = await backendApi.uploadAiImageToBlobStorage(generatedImage.imageUrl);
-      const blobUrl = uploadResponse.blobUrl;
-
-      // Step 2: Download the image from Blob Storage and create a File for upload
-      // Download directly from Blob Storage URL
-      const response = await fetch(blobUrl);
+      // Descargar la imagen generada directamente desde la URL pública que devuelve OpenAI
+      const response = await fetch(generatedImage.imageUrl);
       if (!response.ok) {
-        throw new Error('Failed to download image from Blob Storage.');
+        throw new Error('Failed to download generated image.');
       }
       const blob = await response.blob();
       if (!blob.size) {
@@ -314,7 +309,7 @@ const AIDashboard: React.FC = () => {
       const jpegBlob = await convertBlobToJpeg(blob);
       const file = new File([jpegBlob], `anypost-ai-${Date.now()}.jpg`, { type: 'image/jpeg' });
 
-      // Step 3: Upload to social networks using the standard upload endpoint
+      // Subir al backend usando el endpoint de upload estándar (ya maneja imágenes/videos)
       // The backend will automatically detect it's an image
       const uploadResult = await backendApi.uploadVideoAsset({
         file,
