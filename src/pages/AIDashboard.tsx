@@ -313,13 +313,16 @@ const AIDashboard: React.FC = () => {
 
     setIsPublishing(true);
     try {
-      // Si la imagen viene en data URL (base64), no hace falta proxy ni red
+      // Intentar usar siempre data URL; si no es data URL, hacer fetch directo
       let blob: Blob;
       if (generatedImage.imageUrl.startsWith('data:image')) {
         blob = dataUrlToBlob(generatedImage.imageUrl);
       } else {
-        // Descargar la imagen generada mediante el proxy backend para evitar CORS
-        blob = await backendApi.downloadGeneratedImage(generatedImage.imageUrl);
+        const response = await fetch(generatedImage.imageUrl);
+        if (!response.ok) {
+          throw new Error('Failed to download generated image.');
+        }
+        blob = await response.blob();
       }
       if (!blob.size) {
         throw new Error('Generated image does not contain valid data.');
