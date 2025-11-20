@@ -47,7 +47,7 @@ const SharePost: React.FC = () => {
       return backendApi.getVideoStreamUrl(post.videoUrl);
     }
     if (post?.imageUrl) {
-      return backendApi.getVideoStreamUrl(post.imageUrl);
+      return post.imageUrl;
     }
     return undefined;
   }, [post]);

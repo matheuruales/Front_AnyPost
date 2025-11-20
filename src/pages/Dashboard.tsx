@@ -11,7 +11,7 @@ import { VideoIndexMap } from '../data-structures/VideoIndexMap';
 import { VideoThumbnailCache } from '../data-structures/VideoThumbnailCache';
 import MediaViewerModal from '../components/MediaViewerModal';
 
-// Helper function to get streaming URL for videos
+// Helper function to get streaming URL for videos (videos only)
 const getStreamingUrl = (videoUrl: string | null | undefined): string | undefined => {
   if (!videoUrl) return undefined;
   return backendApi.getVideoStreamUrl(videoUrl);
@@ -465,7 +465,7 @@ const Dashboard: React.FC = () => {
                               }
 
                               if (hasImageMedia) {
-                                const imageSource = video.imageUrl ? getStreamingUrl(video.imageUrl) : video.thumbnail;
+                                const imageSource = video.imageUrl || video.thumbnail;
                                 return (
                                   <img
                                     src={imageSource}
