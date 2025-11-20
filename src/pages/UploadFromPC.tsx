@@ -152,7 +152,7 @@ const UploadFromPC: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const videoAllowedTargets: TargetValue[] = ['youtube', 'instagram', 'linkedin', 'facebook'];
-  const imageAllowedTargets: TargetValue[] = TARGET_OPTIONS.map((o) => o.value);
+  const imageAllowedTargets: TargetValue[] = ['facebook', 'instagram', 'linkedin'];
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -421,7 +421,7 @@ const UploadFromPC: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {(fileType === 'video'
                         ? TARGET_OPTIONS.filter((option) => videoAllowedTargets.includes(option.value))
-                        : TARGET_OPTIONS
+                        : TARGET_OPTIONS.filter((option) => imageAllowedTargets.includes(option.value))
                       ).map((option) => (
                         <TargetSwitch
                           key={option.value}
