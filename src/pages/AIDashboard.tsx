@@ -187,7 +187,7 @@ const AIDashboard: React.FC = () => {
               </span>
             </h1>
             <p className="text-gray-400 text-lg max-w-2xl">
-              Ingresa tu prompt, elige las características y genera la imagen. Se eliminó la publicación: aquí solo creas y descargas.
+              Ingresa tu prompt, elige las características y genera la imagen.
             </p>
           </div>
 
