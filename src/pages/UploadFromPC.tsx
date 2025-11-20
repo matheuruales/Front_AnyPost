@@ -292,9 +292,9 @@ const UploadFromPC: React.FC = () => {
           <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 py-12">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 py-12">
           <div className="mb-12">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <button
                 onClick={() => navigate('/creator-hub')}
                 className="group relative overflow-hidden rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 border border-white/10 hover:border-white/20"
@@ -313,7 +313,7 @@ const UploadFromPC: React.FC = () => {
               <p className="text-sm font-bold uppercase tracking-[0.3em] text-gray-500">Anypost Studio</p>
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                 Upload from PC
               </span>
@@ -339,13 +339,13 @@ const UploadFromPC: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1fr,400px]">
+          <div className="grid gap-6 lg:grid-cols-[1fr,420px]">
             <div className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="group relative">
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                   
-                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 sm:p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -362,7 +362,7 @@ const UploadFromPC: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="group/upload w-full rounded-xl border-2 border-dashed border-white/20 bg-black/20 p-8 transition-all duration-300 hover:border-white/40 hover:bg-black/30 hover:scale-[1.01]"
+                        className="group/upload w-full rounded-xl border-2 border-dashed border-white/20 bg-black/20 p-6 sm:p-8 transition-all duration-300 hover:border-white/40 hover:bg-black/30 hover:scale-[1.01]"
                       >
                         <div className="flex flex-col items-center gap-3">
                           <div className="text-5xl transition-transform duration-300 group-hover/upload:scale-110">
@@ -404,7 +404,7 @@ const UploadFromPC: React.FC = () => {
                 <div className="group relative">
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                   
-                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 sm:p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -437,7 +437,7 @@ const UploadFromPC: React.FC = () => {
                 <div className="group relative">
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700"></div>
                   
-                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
+                  <div className="relative bg-gradient-to-br from-gray-900/50 via-gray-800/40 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-6 sm:p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_40px_rgba(0,0,0,0.12)]">
                     <div className="mb-6">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">Step 3</span>

@@ -208,7 +208,7 @@ const PreviewPanel3D: React.FC = () => {
             <p className="text-sm text-gray-300">
               "Lanza tu nuevo producto con una campaña en 3 clicks que conecta con tu audiencia."
             </p>
-            <div className="grid grid-cols-3 gap-3 text-xs text-gray-300">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-300">
               {[
                 { label: 'Platforms', value: 'Instagram, TikTok, X' },
                 { label: 'Tono', value: 'Creativo + Breve' },
@@ -379,13 +379,13 @@ const Landing: React.FC = () => {
 
         {/* Main Content */}
         <div
-          className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-10"
+          className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 md:pb-24 pt-8 md:pt-14"
           style={{
             transform: `translate3d(0, ${scrollY * 0.1}px, 0)`,
           }}
         >
           {/* 3D Navbar */}
-          <header className="flex items-center justify-between transform-3d">
+          <header className="flex flex-wrap items-center justify-between gap-4 sm:gap-6 transform-3d">
             <Logo3D />
             <div className="flex items-center gap-2" style={{ transform: 'translateZ(10px)' }}>
               {!currentUser && (
@@ -416,7 +416,7 @@ const Landing: React.FC = () => {
           {/* Hero Section with 3D Elements */}
           <section
             ref={heroRef}
-            className="mt-16 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center transform-3d"
+            className="mt-12 md:mt-16 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center transform-3d"
           >
             <div className="space-y-6" style={{ transform: 'translateZ(30px)' }}>
               <span
@@ -476,10 +476,10 @@ const Landing: React.FC = () => {
                   animation: 'fadeInUp 1.2s ease-out 0.3s both',
                 }}
               >
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                   <Link
                     to={primaryCta.to}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-5 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:scale-[1.02] shadow-lg shadow-purple-500/20"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 px-5 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:scale-[1.02] shadow-lg shadow-purple-500/20"
                     style={{
                       transform: 'translateZ(40px)',
                       boxShadow: '0 15px 50px rgba(168, 85, 247, 0.4)',
@@ -492,7 +492,7 @@ const Landing: React.FC = () => {
                   </Link>
                   <Link
                     to={secondaryCta.to}
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                     style={{ transform: 'translateZ(30px)' }}
                   >
                     {secondaryCta.label}
@@ -535,7 +535,7 @@ const Landing: React.FC = () => {
 
                 {/* User avatars - moved down */}
                 <div
-                  className="flex items-center gap-3 text-sm text-gray-400 mt-4"
+                  className="flex items-center gap-3 text-sm text-gray-400 mt-4 flex-wrap"
                   style={{ transform: 'translateZ(20px)' }}
                 >
                   <div className="flex -space-x-2">
@@ -564,7 +564,7 @@ const Landing: React.FC = () => {
           </section>
 
           {/* 3D Features Section */}
-          <section className="mt-20 grid gap-6 md:grid-cols-3 transform-3d">
+          <section className="mt-20 grid gap-6 md:grid-cols-2 xl:grid-cols-3 transform-3d">
             {features.map((feature, index) => (
               <FeatureCard3D key={feature.title} {...feature} index={index} />
             ))}
@@ -572,13 +572,13 @@ const Landing: React.FC = () => {
 
           {/* 3D CTA Section */}
           <section className="mt-16 transform-3d">
-            <TiltCard3D className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-purple-700/30 via-pink-600/30 to-orange-500/30 p-10 backdrop-blur-xl shadow-xl shadow-purple-600/20">
+            <TiltCard3D className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-purple-700/30 via-pink-600/30 to-orange-500/30 p-8 md:p-10 backdrop-blur-xl shadow-xl shadow-purple-600/20">
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/0 to-white/10 opacity-40" />
               <div
-                className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6"
+                className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6 text-center md:text-left"
                 style={{ transform: 'translateZ(30px)' }}
               >
-                <div style={{ transform: 'translateZ(20px)' }}>
+                <div style={{ transform: 'translateZ(20px)' }} className="space-y-2">
                   <p className="text-sm uppercase tracking-[0.2em] text-white/70">Listo para empezar</p>
                   <h3 className="text-3xl font-bold text-white mt-2">
                     Publica en todas tus redes desde un solo lugar
@@ -588,10 +588,10 @@ const Landing: React.FC = () => {
                     resto. Ahorra tiempo y mantén tu marca siempre activa.
                   </p>
                 </div>
-                <div className="flex items-center gap-3" style={{ transform: 'translateZ(30px)' }}>
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto justify-center" style={{ transform: 'translateZ(30px)' }}>
                   <Link
                     to={primaryCta.to}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white text-gray-900 px-5 py-3 text-sm font-bold uppercase tracking-wide shadow-lg hover:scale-[1.02] transition"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white text-gray-900 px-5 py-3 text-sm font-bold uppercase tracking-wide shadow-lg hover:scale-[1.02] transition w-full sm:w-auto justify-center"
                     style={{
                       transform: 'translateZ(40px)',
                       boxShadow: '0 10px 40px rgba(255, 255, 255, 0.2)',
@@ -602,7 +602,7 @@ const Landing: React.FC = () => {
                   {!currentUser && (
                     <Link
                       to="/login"
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition w-full sm:w-auto justify-center"
                       style={{ transform: 'translateZ(20px)' }}
                     >
                       Tengo cuenta

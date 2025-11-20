@@ -70,7 +70,7 @@ const CreatorHub: React.FC = () => {
 
         {/* Content wrapper */}
         <div className="relative z-10">
-          <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 lg:py-16">
             {/* Enhanced Header */}
             <div className="text-center mb-20">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 mb-6 border border-white/10 backdrop-blur-xl">
@@ -80,7 +80,7 @@ const CreatorHub: React.FC = () => {
                 </span>
               </div>
               
-              <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
                 <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                   ¿Qué quieres hacer
                 </span>
@@ -112,12 +112,12 @@ const CreatorHub: React.FC = () => {
             </div>
 
             {/* Enhanced Cards Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto mb-20">
               {actionCards.map((card, index) => (
                 <button
                   key={card.id}
                   onClick={() => navigate(card.navigateTo)}
-                  className={`group relative w-full h-[600px] flex flex-col rounded-3xl bg-gradient-to-br ${card.gradient} p-8 text-left transition-all duration-700 hover:scale-[1.03] border border-white/10 backdrop-blur-xl ${card.glow} hover:${card.hoverGlow}`}
+                  className={`group relative w-full flex flex-col rounded-3xl bg-gradient-to-br ${card.gradient} p-6 sm:p-8 text-left transition-all duration-700 hover:scale-[1.03] border border-white/10 backdrop-blur-xl ${card.glow} hover:${card.hoverGlow} min-h-[420px] sm:min-h-[480px] md:min-h-[520px] lg:min-h-[580px]`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   {/* Animated gradient border on hover */}
@@ -202,7 +202,7 @@ const CreatorHub: React.FC = () => {
             {/* Enhanced Footer */}
             <div className="text-center space-y-6">
               {/* Quick Stats */}
-              <div className="flex items-center justify-center gap-8 mb-8">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mb-8 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-green-500"></div>
                   <span className="text-xs text-gray-500">Sistema operativo</span>
